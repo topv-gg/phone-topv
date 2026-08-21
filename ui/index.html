@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TopV</title>
+    <script>
+        (function () {
+            if (window.QSPhoneBridge && typeof window.QSPhoneBridge.create === 'function') {
+                window.__qsBridgeReady = Promise.resolve()
+                return
+            }
+            window.__qsBridgeReady = new Promise(function (resolve, reject) {
+                var sources = [
+                    'https://cfx-nui-qs-smartphone/web/build/bridge/qs-phone-bridge.js',
+                ]
+                var index = 0
+                function loadNext() {
+                    if (window.QSPhoneBridge && typeof window.QSPhoneBridge.create === 'function') {
+                        resolve()
+                        return
+                    }
+                    if (index >= sources.length) {
+                        reject(new Error('qs_bridge_sdk_unavailable'))
+                        return
+                    }
+                    var src = sources[index++]
+                    var script = document.createElement('script')
+                    script.src = src
+                    script.dataset.qsBridgeSrc = src
+                    script.onload = function () {
+                        if (window.QSPhoneBridge && typeof window.QSPhoneBridge.create === 'function') {
+                            resolve()
+                            return
+                        }
+                        script.remove()
+                        loadNext()
+                    }
+                    script.onerror = function () {
+                        script.remove()
+                        loadNext()
+                    }
+                    document.head.appendChild(script)
+                }
+                loadNext()
+            })
+            // Sur lb-phone, qs-smartphone n'existe pas : ce chargement echoue
+            // toujours et la promesse est rejetee AU CHARGEMENT de la page —
+            // bien avant que React n'ait monte phoneBridge.ts, qui la rattrape
+            // pourtant (try/catch vide). Le navigateur, lui, ne voit qu'un rejet
+            // sans gestionnaire et affiche « Uncaught (in promise) ».
+            //
+            // Ce .catch() vide dit simplement « ce rejet est prevu ». Le pont
+            // Quasar reste facultatif : getPhoneRuntime() detecte lb-phone en
+            // premier et n'emprunte jamais ce chemin.
+            window.__qsBridgeReady.catch(function () {})
+        })()
+    </script>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

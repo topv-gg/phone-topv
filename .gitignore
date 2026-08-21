@@ -1,0 +1,16 @@
+ui/node_modules/
+ui/.env
+ui/.env.*
+
+# Auto-generated TopV key (one secret per server — never in git). It now
+# lives one level up, outside this folder, so that copying or zipping the
+# resource cannot carry a key to another server. Both paths are listed: the
+# old one still appears on servers updating from before 1.0.1.
+topv_autokey.json
+../topv-autokey.json
+
+# Working backups: never versioned, and never left in the folder shipped to
+# server owners.
+*.bak
+*.bak-*
+

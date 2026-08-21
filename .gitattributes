@@ -1,0 +1,14 @@
+# Les fins de ligne sont NORMALISEES en LF dans le depot.
+#
+# Sans cette regle, un fichier commite depuis Windows arrive en CRLF chez un
+# serveur Linux, et le depot finit par melanger les deux : chaque modification
+# fait alors apparaitre le fichier entier comme reecrit, et la moindre
+# relecture devient illisible.
+* text=auto eol=lf
+
+# Les fichiers compiles et les images ne sont jamais touches.
+*.png binary
+*.webp binary
+*.woff2 binary
+*.mp3 binary
+ui/build/** -text

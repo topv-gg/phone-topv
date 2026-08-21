@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('./fonts/poppins-400.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('./fonts/poppins-500.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('./fonts/poppins-600.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Poppins';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('./fonts/poppins-700.woff2') format('woff2');
+}
+
+:root {
+
+    --topv-accent: 249, 115, 22;
+
+    /* ─── MES BULLES DE MESSAGE ────────────────────────────────────────────
+       Jetons repris TELS QUELS du site (globals.css) pour que le DM en jeu et
+       le DM de l'app mobile soient la meme chose.
+
+       ⚠️ Ce n'est PAS un aplat orange. Le site en avait un (#f97316 → #dc2626)
+       et l'a abandonne : sur une conversation entiere l'oeil ne tient pas, et
+       en theme clair du blanc sur orange vif est le pire contraste possible.
+       Un LAVIS pose sur le fond du theme garde l'identite du reseau tout en
+       rendant le texte au theme. Trop de rouge en fin de degrade faisait virer
+       la bulle au brun (sombre) et au rose (clair) : l'orange domine, le rouge
+       ne fait que rechauffer la fin.
+
+       Ici c'est la valeur CLAIRE (Tailwind `darkMode: 'class'` : sans `.dark`,
+       on est en clair). Sur fond clair un lavis doit etre PLUS PALE, pas juste
+       plus clair — la meme opacite sur du blanc donne un orange fluo. */
+    --topv-dm-mienne: linear-gradient(135deg, rgba(251, 146, 60, 0.28) 0%, rgba(249, 115, 22, 0.20) 55%, rgba(239, 68, 68, 0.12) 100%), rgba(255, 255, 255, 0.86);
+    --topv-dm-mienne-trait: rgba(249, 115, 22, 0.30);
+}
+
+.dark {
+    --topv-dm-mienne: linear-gradient(135deg, rgba(251, 146, 60, 0.30) 0%, rgba(249, 115, 22, 0.24) 55%, rgba(239, 68, 68, 0.20) 100%), rgba(255, 255, 255, 0.05);
+    --topv-dm-mienne-trait: rgba(249, 115, 22, 0.34);
+}
+
+.topv-bulle-mienne {
+    background: var(--topv-dm-mienne);
+    border: 1px solid var(--topv-dm-mienne-trait);
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* NUI de jeu : pas de clavier physique, donc le contour de focus du navigateur
+   (rectangle noir sur les boutons, barre verticale sur les zones tactiles de la
+   story) n'a aucune utilité et gêne. On le retire, ainsi que la surbrillance
+   bleue au tap. Les champs de saisie GARDENT un repère visuel via leur propre
+   style (bordure) — on ne casse donc pas l'accessibilité utile. */
+*,
+*::before,
+*::after {
+    -webkit-tap-highlight-color: transparent;
+}
+:focus,
+:focus-visible,
+button:focus,
+a:focus,
+[role='button']:focus,
+[tabindex]:focus {
+    outline: none;
+}
+
+.topv-noscrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.topv-noscrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Une barre de defilement fine, arrondie, aux couleurs de l'appli. Celle de
+   CEF est large et grise : dans un panneau de 8 lignes d'emoji, elle mange la
+   place et jure avec tout le reste. */
+.topv-thinbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(249, 115, 22, 0.8) transparent;
+}
+.topv-thinbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+.topv-thinbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.topv-thinbar::-webkit-scrollbar-thumb {
+    background: rgba(249, 115, 22, 0.8);
+    border-radius: 999px;
+}
+
+/* Les coeurs du direct : ils s'élèvent en ondulant puis s'évanouissent. */
+@keyframes topv-heart-rise {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.5);
+        opacity: 0;
+    }
+    12% {
+        opacity: 1;
+        transform: translateY(-18px) translateX(4px) scale(1);
+    }
+    55% {
+        transform: translateY(-120px) translateX(-10px) scale(1.05);
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(-250px) translateX(8px) scale(1);
+        opacity: 0;
+    }
+}
+.topv-heart-float {
+    opacity: 0;
+    animation: topv-heart-rise 2.3s ease-out forwards;
+}
+
+.topv-flashback {
+    position: relative;
+    background: rgba(180, 130, 60, 0.04);
+}
+.dark .topv-flashback {
+    background: rgba(180, 130, 60, 0.05);
+}
+
+@keyframes topv-slide-in {
+    from {
+        transform: translateX(24px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+.topv-slide-in {
+    animation: topv-slide-in 160ms ease-out;
+}
+
+/* L'anneau d'un DIRECT (façon Instagram) : le dégradé rouge-orange tourne en
+   continu autour de la photo et « respire » — impossible de le confondre avec
+   l'anneau fixe d'une story. */
+@keyframes topv-live-ring {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        transform: rotate(180deg) scale(1.06);
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+.topv-live-ring {
+    animation: topv-live-ring 2.2s linear infinite;
+}
+
+/* Le badge LIVE clignote doucement, comme le point rouge d'un enregistrement. */
+@keyframes topv-live-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.topv-live-blink {
+    animation: topv-live-blink 1.1s ease-in-out infinite;
+}
+
+/* Fondu enchaîné des images de direct : la nouvelle image apparaît en douceur
+   par-dessus l'ancienne (~3 img/s paraît fluide au lieu de saccadé). */
+@keyframes topv-frame-fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Le gros cœur du double tap sur un reel (façon Instagram) : il éclate au
+   centre, respire une fraction de seconde, puis s'efface en grossissant. */
+@keyframes topv-reel-heart {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    12% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+    28% {
+        transform: scale(0.95);
+    }
+    60% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.3);
+        opacity: 0;
+    }
+}
+
+.topv-reel-heart {
+    animation: topv-reel-heart 850ms ease-out forwards;
+}
+
+@keyframes topv-pop {
+    from {
+        transform: scale(0.92) translateY(4px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+.topv-pop {
+    animation: topv-pop 140ms ease-out;
+}
