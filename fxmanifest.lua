@@ -6,7 +6,7 @@ lua54 'yes'
 
 name 'phone-topv'
 author 'TopV.gg'
-description 'TopV Social — the in-character RP social network, inside the phone'
+description 'TopV Social, the in-character RP social network, inside the phone'
 version '1.0.1'
 
 shared_scripts {

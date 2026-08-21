@@ -1,10 +1,12 @@
-# phone-topv — TopV Social
+# phone-topv, TopV Social
+
+**[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://topv.gg/telechargements/phone-topv-1.0.1.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **iOS** (in review)
 
 In-game client for **[topv.gg](https://topv.gg)**, the cross-server RP social network. Characters live
 24/7: a post written on the website shows up on the in-game phone and the other way round, DMs stay in
 sync, and **only in-character content** is ever shown in game.
 
-Runs as a custom app on **qs-smartphone** or **lb-phone** — whichever one your server has started.
+Runs as a custom app on **qs-smartphone** or **lb-phone**, whichever one your server has started.
 
 ---
 
@@ -12,8 +14,8 @@ Runs as a custom app on **qs-smartphone** or **lb-phone** — whichever one your
 
 - `qs-smartphone` (V3) **or** `lb-phone`
 - `ox_lib`
-- Players must have **Discord linked to FiveM** — TopV identifies accounts by Discord ID
-- *(optional)* `MugShotBase64` — sets the profile photo from the character's face
+- Players must have **Discord linked to FiveM**. TopV identifies accounts by Discord ID
+- *(optional)* `MugShotBase64` sets the profile photo from the character's face
 
 ---
 
@@ -28,19 +30,19 @@ Runs as a custom app on **qs-smartphone** or **lb-phone** — whichever one your
    ensure phone-topv
    ```
 
-   Order does not matter — if your phone starts later, the app registers itself on it then.
+   Order does not matter: if your phone starts later, the app registers itself on it then.
 
-3. Start the server. That's it — the resource registers your server on topv.gg by itself and stores
+3. Start the server. That's it: the resource registers your server on topv.gg by itself and stores
    its own key. Nothing to create, nothing to paste.
 
-> ### 📌 Keep `topv-autokey.json` — and note where it is
+> ### 📌 Keep `topv-autokey.json`, and note where it is
 >
 > It sits **next to this resource folder, not inside it** (`resources/topv-autokey.json`, alongside
 > `phone-topv/`). That is deliberate: the key is then never part of what gets copied, zipped or
 > re-shared when someone passes the resource on. Servers used to end up sharing one key exactly that
 > way, and topv.gg saw them as a single server.
 >
-> The file holds your server's key **and its install id** — the id is what tells topv.gg your server
+> The file holds your server's key **and its install id**. The id is what tells topv.gg your server
 > apart from every other one, including servers sharing your IP on the same host.
 >
 > **Delete it and your server comes back as a brand-new listing**, leaving the old one orphaned on the
@@ -51,7 +53,7 @@ Runs as a custom app on **qs-smartphone** or **lb-phone** — whichever one your
 
 ### If your server already has a claimed listing on topv.gg
 
-Auto-registration refuses to attach itself to a listing someone has claimed — otherwise anyone could
+Auto-registration refuses to attach itself to a listing someone has claimed, otherwise anyone could
 name their server after yours and post in its name. Paste your own key instead:
 
 ```cfg
@@ -59,7 +61,7 @@ set topv_api_key "topv_sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 # Dashboard → Servers → your server → In-game integration
 ```
 
-> ⚠️ **`server.cfg` only — never `config.lua`.** `config.lua` is a `shared_script`, downloaded by every
+> ⚠️ **`server.cfg` only, never `config.lua`.** `config.lua` is a `shared_script`, downloaded by every
 > player. A key placed there is handed to your whole playerbase. There is deliberately no `apiKey`
 > field in it.
 
@@ -78,14 +80,14 @@ The interface follows the phone's language. Ships with EN, ES, FR, DE, IT, PT, N
 anything else falls back to English.
 
 The translations are **compiled into the interface**, so dropping a file into `locales/` changes
-nothing on its own — the interface has to be rebuilt for it to be picked up. Ask us for a language
+nothing on its own: the interface has to be rebuilt for it to be picked up. Ask us for a language
 and we will add it.
 
 ---
 
 ## Configuration
 
-Defaults are sane — most servers change nothing. The settings that are actually worth touching:
+Defaults are sane, most servers change nothing. The settings that are actually worth touching:
 
 | Key | Default | What it does |
 |---|---|---|
@@ -94,7 +96,7 @@ Defaults are sane — most servers change nothing. The settings that are actuall
 | `Config.Push.enabled` | `true` | Notification banners while the phone is closed |
 | `Config.Push.intervalMs` | 3 min | How often each player is checked for new notifications |
 | `Config.Session.heartbeatMs` | 5 min | Keep-alive interval |
-| `Config.Limits.*` | active | Text lengths, image count, per-action cooldowns. Generous — a human never hits them |
+| `Config.Limits.*` | active | Text lengths, image count, per-action cooldowns. Generous, a human never hits them |
 | `Config.Mugshot.enabled` | `true` | Profile photo from the character's face (needs `MugShotBase64`) |
 | `Config.Debug` | `false` | Verbose server logging |
 
@@ -115,7 +117,7 @@ topv restart <id>  # re-run the session for one player
 At startup you should see the framework, the interface address, and either your key or the
 auto-registration line.
 
-**End to end**: connect with a character, wait ~5 s, open `https://topv.gg/rolistes/<username>` — the
+**End to end**: connect with a character, wait ~5 s, open `https://topv.gg/rolistes/<username>`. The
 character should be there. Then open the app and post something.
 
 ### Common problems
@@ -124,10 +126,10 @@ character should be there. Then open the app and post something.
 |---|---|
 | Players can't find the app | With `appStoreOnly = true` it lives in the phone's App Store and has to be installed from there. Set it to `false` to pre-install it instead |
 | App missing entirely | No supported phone was started. After 30 s the client log says `no phone (qs-smartphone / lb-phone) started` |
-| `401` in the console | Key invalid or revoked. The resource re-registers itself after three of them — unless you set the key by hand, in which case regenerate it on the dashboard |
+| `401` in the console | Key invalid or revoked. The resource re-registers itself after three of them, unless you set the key by hand, in which case regenerate it on the dashboard |
 | Feed looks empty | It is in-character only, and there is nothing to show until characters start posting |
 | Blank phone screen | An invalid `Config.UI.baseUrl`. The resource falls back to the bundled copy and says so in the console |
-| Session never starts | The player has no Discord linked to FiveM. Nothing can be done server-side — they have to link it |
+| Session never starts | The player has no Discord linked to FiveM. Nothing can be done server-side, they have to link it |
 | Voice messages fail on **lb-phone** | lb-phone renders our interface in a cross-origin iframe and sets no `allow="microphone"`, so Chromium denies the microphone. Run `FIX-LBPHONE-MIC.ps1` (Windows) after every lb-phone update; it finds lb-phone on its own and keeps a backup of each file it touches |
 
 ---
@@ -138,7 +140,7 @@ character should be there. Then open the app and post something.
   the key. Players cannot see it or use it.
 - **Identity cannot be spoofed**: the Discord id is resolved server-side from the player's identifiers,
   never taken from the phone.
-- **Three player-triggered events exist in total** — two live relays and the profile photo upload.
+- **Three player-triggered events exist in total**: two live relays and the profile photo upload.
   All three require an active session; the relays also require a stream the player actually started.
 - **Rate limiting is on by default**, per player and per action, so a modified client cannot burn your
   server's API budget. TopV also applies its own per-server budget: 240 requests/min plus 180 per
@@ -151,7 +153,7 @@ character should be there. Then open the app and post something.
 ```lua
 -- OPTIONAL. The resource already watches the framework's own answer every
 -- few seconds (Config.Session.identityWatchMs) and re-syncs on its own
--- when the player switches character — whatever multichar you run.
+-- when the player switches character, whatever multichar you run.
 -- Fire this only if you want the switch to register INSTANTLY.
 TriggerEvent('topv:characterSwitched', src)          -- server-side
 

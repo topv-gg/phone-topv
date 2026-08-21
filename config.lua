@@ -23,13 +23,13 @@ Config.App = {
     -- lb-phone renders the store listing in a much tighter block than Quasar,
     -- where the long text above gets cramped. One sentence reads far better
     -- there. Quasar keeps `description` exactly as it is.
-    descriptionLb = 'The in-character social network that connects every server — post, react and message, 24/7.',
+    descriptionLb = 'The in-character social network that connects every server: post, react and message, 24/7.',
     age          = '18+',
     appStoreOnly = true, -- true = shown in the store with its listing (description + images), downloadable. Default pre-installation is handled by Quasar/lb-phone themselves (integration), not by this flag.
     price        = 0,
     sizeMb       = 2,
     version      = '1.0.1',
-    whatsNew     = 'Your RP social network, in-game. Feed, DMs, stories, live and character profiles — 100% in-character, synced with topv.gg.',
+    whatsNew     = 'Your RP social network, in-game. Feed, DMs, stories, live and character profiles, 100%% in-character, synced with topv.gg.',
 }
 
 -- Session bootstrap + keep-alive (ms).
@@ -73,11 +73,11 @@ Config.Poll = {
 -- Push notifications while the phone is closed. One Quasar banner per
 -- fresh notification (DM / mention / like / comment / follow), with the
 -- character name of the sender and a short preview. Interval kept short
--- so the banner arrives close to real time — the payload is a single
+-- so the banner arrives close to real time: the payload is a single
 -- indexed query on Notification.createdAt, so cost per poll is trivial.
 Config.Push = {
     enabled    = true,
-    -- 3 min: at 30 s, each player generated 2 push req/min in the background —
+    -- 3 min: at 30 s, each player generated 2 push req/min in the background,
     -- enough on a busy server to eat most of the per-server budget (240/min plus
     -- 180 per connected player) before heartbeats and real user traffic count.
     intervalMs = 3 * 60 * 1000,
@@ -86,7 +86,7 @@ Config.Push = {
 
 -- Input limits. The window + cooldowns are ACTIVE by default: they cap request
 -- rates so a misbehaving client can't loop on post.create / dm.send / feed.get
--- and burn the whole server's API budget. Values are generous — a human player
+-- and burn the whole server's API budget. Values are generous, a human player
 -- never hits them.
 Config.Limits = {
     postTextMax     = 1000,
