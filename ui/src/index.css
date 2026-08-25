@@ -35,21 +35,21 @@
 
     --topv-accent: 249, 115, 22;
 
-    /* ─── MES BULLES DE MESSAGE ────────────────────────────────────────────
-       Jetons repris TELS QUELS du site (globals.css) pour que le DM en jeu et
-       le DM de l'app mobile soient la meme chose.
+/* ─── MY MESSAGE BUBBLES ───────────────────────────────────────────────
+       Tokens taken AS IS from the site (globals.css) so that the in-game DM and
+       the mobile app's DM are the same thing.
 
-       ⚠️ Ce n'est PAS un aplat orange. Le site en avait un (#f97316 → #dc2626)
-       et l'a abandonne : sur une conversation entiere l'oeil ne tient pas, et
-       en theme clair du blanc sur orange vif est le pire contraste possible.
-       Un LAVIS pose sur le fond du theme garde l'identite du reseau tout en
-       rendant le texte au theme. Trop de rouge en fin de degrade faisait virer
-       la bulle au brun (sombre) et au rose (clair) : l'orange domine, le rouge
-       ne fait que rechauffer la fin.
+       ⚠️ This is NOT a solid orange. The site had one (#f97316 → #dc2626) and
+       dropped it: over a whole conversation the eye cannot take it, and in light
+       theme white on bright orange is the worst possible contrast. A WASH laid
+       over the theme's background keeps the network's identity while giving the
+       text back to the theme. Too much red at the end of the gradient turned the
+       bubble brown (dark) and pink (light): orange dominates, red only warms the
+       end.
 
-       Ici c'est la valeur CLAIRE (Tailwind `darkMode: 'class'` : sans `.dark`,
-       on est en clair). Sur fond clair un lavis doit etre PLUS PALE, pas juste
-       plus clair — la meme opacite sur du blanc donne un orange fluo. */
+       Here it is the LIGHT value (Tailwind `darkMode: 'class'`: without `.dark`,
+       we are in light theme). On a light background a wash must be PALER, not
+       merely lighter — the same opacity over white gives a fluorescent orange. */
     --topv-dm-mienne: linear-gradient(135deg, rgba(251, 146, 60, 0.28) 0%, rgba(249, 115, 22, 0.20) 55%, rgba(239, 68, 68, 0.12) 100%), rgba(255, 255, 255, 0.86);
     --topv-dm-mienne-trait: rgba(249, 115, 22, 0.30);
 }
@@ -73,11 +73,11 @@ body {
     text-rendering: optimizeLegibility;
 }
 
-/* NUI de jeu : pas de clavier physique, donc le contour de focus du navigateur
-   (rectangle noir sur les boutons, barre verticale sur les zones tactiles de la
-   story) n'a aucune utilité et gêne. On le retire, ainsi que la surbrillance
-   bleue au tap. Les champs de saisie GARDENT un repère visuel via leur propre
-   style (bordure) — on ne casse donc pas l'accessibilité utile. */
+/* Game NUI: no physical keyboard, so the browser's focus outline (a black
+   rectangle on buttons, a vertical bar on a story's touch zones) is useless and
+   gets in the way. We remove it, along with the blue tap highlight. Input fields
+   KEEP a visual cue through their own style (border) — so we do not break the
+   accessibility that matters. */
 *,
 *::before,
 *::after {
@@ -100,9 +100,9 @@ a:focus,
     display: none;
 }
 
-/* Une barre de defilement fine, arrondie, aux couleurs de l'appli. Celle de
-   CEF est large et grise : dans un panneau de 8 lignes d'emoji, elle mange la
-   place et jure avec tout le reste. */
+/* A thin, rounded scrollbar in the app's colours. CEF's is wide and grey: in a
+   panel of eight rows of emoji it eats the space and clashes with everything
+   else. */
 .topv-thinbar {
     scrollbar-width: thin;
     scrollbar-color: rgba(249, 115, 22, 0.8) transparent;
@@ -119,7 +119,7 @@ a:focus,
     border-radius: 999px;
 }
 
-/* Les coeurs du direct : ils s'élèvent en ondulant puis s'évanouissent. */
+/* The live's hearts: they rise, waving, then fade away. */
 @keyframes topv-heart-rise {
     0% {
         transform: translateY(0) translateX(0) scale(0.5);
@@ -165,9 +165,9 @@ a:focus,
     animation: topv-slide-in 160ms ease-out;
 }
 
-/* L'anneau d'un DIRECT (façon Instagram) : le dégradé rouge-orange tourne en
-   continu autour de la photo et « respire » — impossible de le confondre avec
-   l'anneau fixe d'une story. */
+/* A LIVE's ring (Instagram style): the red-orange gradient turns continuously
+   around the photo and “breathes” — impossible to mistake for a story's fixed
+   ring. */
 @keyframes topv-live-ring {
     0% {
         transform: rotate(0deg) scale(1);
@@ -184,7 +184,7 @@ a:focus,
     animation: topv-live-ring 2.2s linear infinite;
 }
 
-/* Le badge LIVE clignote doucement, comme le point rouge d'un enregistrement. */
+/* The LIVE badge blinks gently, like the red dot of a recording. */
 @keyframes topv-live-blink {
     0%,
     100% {
@@ -199,8 +199,8 @@ a:focus,
     animation: topv-live-blink 1.1s ease-in-out infinite;
 }
 
-/* Fondu enchaîné des images de direct : la nouvelle image apparaît en douceur
-   par-dessus l'ancienne (~3 img/s paraît fluide au lieu de saccadé). */
+/* Cross-fade between live images: the new image appears gently over the old one
+   (~3 images/s looks smooth instead of jerky). */
 @keyframes topv-frame-fade {
     from {
         opacity: 0;
@@ -210,8 +210,8 @@ a:focus,
     }
 }
 
-/* Le gros cœur du double tap sur un reel (façon Instagram) : il éclate au
-   centre, respire une fraction de seconde, puis s'efface en grossissant. */
+/* The big heart of a double tap on a reel (Instagram style): it bursts in the
+   centre, breathes for a fraction of a second, then fades away as it grows. */
 @keyframes topv-reel-heart {
     0% {
         transform: scale(0);

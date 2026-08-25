@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import classNames from 'classnames'
 
-// Lecteur vocal facon Instagram/WhatsApp : un bouton lecture rond, une barre de
-// progression cliquable pour se deplacer, et la duree. Le lecteur natif
-// <audio controls> est etroit et illisible dans une bulle — celui-ci s'y fond.
+// Voice player, Instagram/WhatsApp style: a round play button, a clickable progress
+// bar to move around, and the duration. The native <audio controls> player is
+// narrow and unreadable inside a bubble — this one blends into it.
 //
-// `mine` inverse les couleurs pour la bulle de l'expediteur (fond sombre,
-// contenu clair) comme le reste des bulles.
+// `mine` inverts the colours for the sender's bubble (dark background, light
+// content) like the rest of the bubbles.
 //
-// La forme d'onde n'est pas decorative : une barre pleine ne dit rien d'un
-// message audio, un relief laisse voir sa longueur et permet de viser un
-// endroit. On ne decode pas l'audio (couteux, inutile ici) : le relief est
-// DERIVE DE L'ADRESSE du fichier, donc stable pour un meme vocal.
+// The waveform is not decorative: a solid bar says nothing about an audio message,
+// whereas a relief shows its length and lets you aim at a spot. We do not decode
+// the audio (expensive, useless here): the relief is DERIVED FROM THE FILE'S
+// ADDRESS, so it stays the same for a given voice message.
 
 const BARS = 28
 
@@ -36,8 +36,8 @@ export function VoiceMessage({ url, mine }: { url: string; mine?: boolean }) {
         const a = audioRef.current
         if (!a) return
         const onTime = () => setCur(a.currentTime || 0)
-        // La duree d'un WebM enregistre n'est parfois connue qu'apres le premier
-        // chargement des metadonnees, voire a la fin : on la relit a chaque fois.
+        // The duration of a recorded WebM is sometimes only known once the metadata
+        // has first loaded, or even at the very end: we read it again every time.
         const onMeta = () => setDur(Number.isFinite(a.duration) ? a.duration : 0)
         const onEnd = () => { setPlaying(false); setCur(0) }
         a.addEventListener('timeupdate', onTime)
@@ -76,13 +76,13 @@ export function VoiceMessage({ url, mine }: { url: string; mine?: boolean }) {
     }
 
     const ratio = dur > 0 ? cur / dur : 0
-    // Avant lecture : la duree totale. Pendant : le temps ecoule.
+    // Before playback: the total duration. During: the elapsed time.
     const shownTime = playing || cur > 0 ? cur : dur
 
     return (
-        // `stopPropagation` : la bulle ouvre son menu sur un appui long. Sans
-        // cela, viser un endroit du vocal ouvrait le menu au lieu de deplacer
-        // la lecture.
+        // `stopPropagation`: the bubble opens its menu on a long press. Without
+        // that, aiming at a spot in the voice message opened the menu instead of
+        // moving playback.
         <div
             className="flex w-56 max-w-full items-center gap-2.5 py-0.5"
             onPointerDown={(e) => e.stopPropagation()}
@@ -93,10 +93,10 @@ export function VoiceMessage({ url, mine }: { url: string; mine?: boolean }) {
                 onClick={toggle}
                 className={classNames(
                     'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition active:scale-95',
-                    // ⚠️ `mine` ne teinte plus que le FOND du bouton, jamais le
-                    // texte ni les barres : la bulle sortante est un lavis, pas
-                    // un aplat, et du blanc y devenait illisible (en sombre elle
-                    // etait meme blanche — donc blanc sur blanc).
+                    // ⚠️ `mine` now tints only the button's BACKGROUND, never the
+                    // text or the bars: the outgoing bubble is a wash, not a solid
+                    // fill, and white became unreadable on it (in dark theme it was
+                    // even white — so white on white).
                     mine
                         ? 'bg-orange-500/20 text-zinc-700 dark:text-zinc-100'
                         : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-100',
@@ -121,8 +121,8 @@ export function VoiceMessage({ url, mine }: { url: string; mine?: boolean }) {
                         style={{ height: `${Math.round(h * 18)}px` }}
                         className={classNames(
                             'min-w-[2px] flex-1 rounded-full transition-colors',
-                            // Orange derriere la tete de lecture, gris devant —
-                            // des deux cotes de la conversation, comme le site.
+                            // Orange behind the playhead, grey in front — on both
+                            // sides of the conversation, like the site.
                             i / BARS <= ratio
                                 ? 'bg-orange-500'
                                 : 'bg-zinc-300 dark:bg-zinc-600',

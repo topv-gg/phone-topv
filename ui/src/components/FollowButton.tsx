@@ -13,8 +13,8 @@ export function FollowButton({
 }: {
     username: string
     isFollowing: boolean
-    // Le personnage affiche sur le profil. Optionnel : les ecrans sans
-    // personnage precis laissent le serveur choisir le principal.
+    // The character shown on the profile. Optional: screens with no specific
+    // character let the server pick the main one.
     characterId?: string | null
     onChanged?: (isFollowing: boolean, followerCount?: number) => void
 

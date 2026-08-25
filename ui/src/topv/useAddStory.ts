@@ -7,17 +7,17 @@ import { getPhoneBridgeApi } from '@/utils/phoneBridge'
 /**
  * Shared "add a story" flow, used by the feed StoriesBar AND the profile header.
  *
- * Le telephone hote ne rappelle pas toujours quand son menu de choix se referme
- * sans selection. Chaque etape est donc bornee dans le temps (`borne`) : le flux
- * se termine TOUJOURS, et le bouton reste utilisable. La bulle ne s'estompe plus
- * pendant le choix — c'est cet estompage bloque qui la faisait passer pour morte.
+ * The host phone does not always call back when its picker closes without a
+ * selection. Each step is therefore bounded in time (`borne`): the flow ALWAYS
+ * ends, and the button stays usable. The bubble no longer fades while the choice is
+ * being made — it was that stuck fading that made it look dead.
  */
 /**
- * Borne UNE etape du pont. Le telephone hote ne repond pas toujours : quand on
- * referme son menu d'options en touchant a cote, la promesse reste en suspens
- * pour toujours. Tout ce qui suivait — y compris le `finally` qui rend la main —
- * ne s'executait alors jamais, et la seule facon de s'en sortir etait de fermer
- * le telephone. Passe le delai, on considere que l'utilisateur a renonce.
+ * Bounds ONE step of the bridge. The host phone does not always answer: when you
+ * close its options menu by touching beside it, the promise stays pending for ever.
+ * Everything that followed — including the `finally` that hands control back — then
+ * never ran, and the only way out was to close the phone. Past the delay, we
+ * consider that the user has given up.
  */
 function borne<T>(p: Promise<T>, ms = 8000): Promise<T | null> {
     return Promise.race([
@@ -58,9 +58,9 @@ export function useAddStory() {
                 nav.push({ name: 'liveBroadcast' })
                 return
             }
-            // L'appareil photo et la galerie demandent du temps a l'utilisateur :
-            // on leur laisse une minute avant d'abandonner, la ou le menu
-            // d'options se decide en quelques secondes.
+            // The camera and the gallery ask time of the user: we give them a
+            // minute before giving up, where the options menu is decided in a few
+            // seconds.
             const shot =
                 choice?.key === 'camera'
                     ? await borne(api.pickCameraMedia(), 60000)

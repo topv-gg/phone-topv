@@ -5,15 +5,14 @@ import { getLocale } from '@/topv/i18n'
 import { getDeviceToken } from '@/topv/link'
 
 /**
- * LE TUTO D'OUVERTURE — « pour une immersion totale, sécurise ton compte ».
+ * THE OPENING TUTORIAL — “for full immersion, secure your account”.
  *
- * À la première ouverture, si le compte n'est PAS encore sécurisé : on amène le
- * joueur sur SA fiche, l'écran s'assombrit, et le coin du cadenas (🔒, en haut
- * à droite) s'éclaire avec une bulle. Une seule fois (mémorisé), jamais pour un
- * compte déjà sécurisé.
+ * On first opening, if the account is NOT yet secured: we take the player to THEIR
+ * profile, the screen darkens, and the lock corner (🔒, top right) lights up with a
+ * bubble. Once only (remembered), never for an account that is already secured.
  *
- * Défensif : si quoi que ce soit manque (pas de session, cadenas introuvable),
- * on ne montre rien — jamais de blocage de l'ouverture.
+ * Defensive: if anything is missing (no session, lock not found), we show nothing —
+ * the opening is never blocked.
  */
 const SEEN_KEY = 'topv:coach-secure-seen'
 
@@ -24,14 +23,14 @@ export function CoachSecure() {
   const [spot, setSpot] = useState<{ x: number; y: number; r: number } | null>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
 
-  // Déclenchement : session prête, non sécurisé, jamais vu.
+  // Trigger: session ready, not secured, never seen.
   useEffect(() => {
     if (status !== 'ready' || !me) return
-    if (getDeviceToken()) return // déjà sécurisé
+    if (getDeviceToken()) return // already secured
     let seen = false
-    try { seen = !!localStorage.getItem(SEEN_KEY) } catch { /* mode privé */ }
+    try { seen = !!localStorage.getItem(SEEN_KEY) } catch { /* private mode */ }
     if (seen) return
-    // On amène le joueur sur sa fiche, puis on montre le voile.
+    // We take the player to their profile, then show the veil.
     nav.setTab('feed')
     nav.push({ name: 'profile', username: me })
     const t = setTimeout(() => setShow(true), 650)
@@ -39,20 +38,21 @@ export function CoachSecure() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, me])
 
-  // La lumière est mesurée en coordonnées RELATIVES au voile (sinon un ancêtre
-  // décalé la place à côté du cadenas).
+  // The light is measured in coordinates RELATIVE to the veil (otherwise an offset
+  // ancestor places it beside the lock).
   //
-  // ⚠️ NE JAMAIS PARIER SUR UN DÉLAI. Le cadenas est dans un groupe aligné à
-  // DROITE, juste avant le bouton « ✏️ Modifier » qui porte du TEXTE. Tant que
-  // ce texte n'est pas rendu (police, traduction), ce bouton est étroit et le
-  // cadenas est plus à droite ; le texte arrive, le bouton s'élargit, et le
-  // cadenas GLISSE VERS LA GAUCHE. Une mesure unique — puis deux frames, puis
-  // 350 ms — sont toutes tombées trop tôt : le halo restait sur le crayon.
+  // ⚠️ NEVER BET ON A DELAY. The lock sits in a group aligned to the RIGHT, just
+  // before the “✏️ Edit” button, which carries TEXT. As long as that text has not
+  // rendered (font, translation), the button is narrow and the lock sits further
+  // right; the text arrives, the button widens, and the lock SLIDES TO THE LEFT. A
+  // single measurement — then two frames, then 350 ms — all landed too early: the
+  // halo stayed on the pencil.
   //
-  // Donc on ne mesure pas « au bon moment », on SUIT la cible : une mesure par
-  // frame tant que le tuto est affiché. C'est deux `getBoundingClientRect` par
-  // frame sur un voile qui ne vit que quelques secondes, et l'état n'est poussé
-  // que si la position a réellement bougé (sinon on re-rendrait 60 fois/s).
+  // So we do not measure “at the right moment”, we FOLLOW the target: one
+  // measurement per frame for as long as the tutorial is shown. That is two
+  // `getBoundingClientRect` per frame on a veil that only lives a few seconds, and
+  // the state is only pushed if the position actually moved (otherwise we would re-
+  // render 60 times a second).
   useLayoutEffect(() => {
     if (!show) return
     let raf = 0
@@ -115,7 +115,7 @@ export function CoachSecure() {
 
   return (
     <div ref={overlayRef} style={{ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-      {/* Voile sombre, avec un trou lumineux sur le cadenas si on l'a repéré. */}
+      {/* Dark veil, with a bright hole over the lock if we have located it. */}
       <div
         onClick={dismiss}
         style={{
@@ -125,7 +125,7 @@ export function CoachSecure() {
             : 'rgba(0,0,0,0.82)',
         }}
       />
-      {/* Croix pour quitter le tuto, en haut à droite. */}
+      {/* Cross to leave the tutorial, top right. */}
       <button
         type="button"
         onClick={dismiss}
@@ -153,7 +153,7 @@ export function CoachSecure() {
           }}
         />
       )}
-      {/* La bulle : sous le cadenas (ou en haut si repère absent). */}
+      {/* The bubble: under the lock (or at the top if the landmark is missing). */}
       <div
         style={{
           position: 'absolute',

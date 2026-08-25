@@ -122,13 +122,12 @@ export function StoriesBar() {
                                 Instagram) — otherwise there's no way to know it's
                                 online. Story = fixed golden gradient; live = animated
                                 red ring: two distinct colour codes. */}
-                            {/* Plus de bulle palie pendant le choix du media :
-                                le menu d'options couvre deja tout l'ecran, donc
-                                l'estompage n'apprenait rien — mais si le menu se
-                                refermait sans repondre, la bulle RESTAIT pale et
-                                donnait l'impression d'etre morte. La fiche du
-                                profil, elle, n'a jamais estompe : c'est pour ca
-                                qu'elle "marchait". */}
+                            {/* No more faded bubble while the media is being
+                                chosen: the options menu already covers the whole
+                                screen, so the fading taught nothing — but if the
+                                menu closed without an answer, the bubble STAYED
+                                pale and looked dead. The profile sheet never
+                                faded: that is why it “worked”. */}
                             <Ring hasUnseen={!!mine}>
                                 {/* MY OWN bubble: prefer my reliable local avatar
                                     (same source as the profile header). The story

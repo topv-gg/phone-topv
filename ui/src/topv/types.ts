@@ -158,7 +158,7 @@ export type CharacterPatch = {
 
 export type Profile = {
     username: string
-    /** Compte sécurisé (téléphone lié) → badge de vérification. */
+/** Secured account (phone linked) → verification badge. */
     secured?: boolean
     displayName?: string | null
     avatarUrl?: string | null
@@ -206,7 +206,7 @@ export type AccountsPage = {
 export type SearchResults = {
     results: AccountRow[]
     count: number
-    /** Reste-t-il une page apres celle-ci. */
+/** Whether there is a page after this one. */
     hasMore?: boolean
 }
 
@@ -252,9 +252,8 @@ export type Story = {
     id: string
     imageUrl: string
     caption?: string | null
-    // Les personnages nommes dans la legende, resolus par le serveur : sans
-    // eux, le rendu afficherait la syntaxe brute et le clic ne mènerait nulle
-    // part.
+    // The characters named in the caption, resolved by the server: without them,
+    // the rendering would show the raw syntax and the click would lead nowhere.
     captionMentions?: Array<{
         characterId: string
         name: string
@@ -378,7 +377,8 @@ export type Conversation = {
     canSend?: boolean
 }
 
-// Message hisse en tete du fil. Le texte est deja tronque par le serveur.
+// Message hoisted to the top of the thread. The text is already truncated by the
+// server.
 export type PinnedMessage = {
     id: string
     text: string
@@ -435,8 +435,8 @@ export type LiveChatMessage = {
     createdAt: string
     characterId?: string | null
     characterName?: string | null
-    // Le visage et la couleur : sur un direct qui defile vite, une colonne de
-    // lignes blanches identiques ne permet pas de suivre qui parle.
+    // The face and the colour: on a live that scrolls fast, a column of identical
+    // white lines makes it impossible to follow who is speaking.
     characterAvatarUrl?: string | null
     characterColor?: string | null
 }
@@ -457,8 +457,8 @@ export type LiveStartResult = {
 
 export type Message = {
     id: string
-    // Les reactions posees sur ce message : emoji -> qui l'a mis. Une seule
-    // par personne, la regle est tenue par le serveur.
+    // The reactions placed on this message: emoji -> who put it there. One per
+    // person, the rule is held by the server.
     reactions?: Record<string, string[]>
     edited?: boolean
     text: string
@@ -472,22 +472,22 @@ export type Message = {
     // extension at render time, same as post videos — nothing to keep in sync.
     mediaUrls?: string[]
 
-    // Message supprime par son expediteur : le contenu n'est plus servi.
+    // Message deleted by its sender: the content is no longer served.
     deleted?: boolean
-    // Epingle en tete du fil (date d'epinglage, pas d'envoi).
+    // Pinned to the top of the thread (pinning date, not sending date).
     pinnedAt?: string | null
-    // Relaye depuis une autre conversation (WhatsApp le dit aussi).
+    // Relayed from another conversation (WhatsApp says so too).
     forwarded?: boolean
-    // Groupe : lu par TOUS les autres membres presents. Un groupe n'a pas UNE
-    // date de lecture — seul « tout le monde a lu » a un sens a afficher.
+    // Group: read by ALL the other members present. A group does not have ONE
+    // reading date — only “everyone has read it” makes sense to display.
     readByAll?: boolean
-    // Ligne de service d'un groupe ("joined" | "left" | "removed" | "renamed").
-    // Ce n'est pas une bulle : c'est une ligne centree qui raconte la vie du fil.
+    // A group's service line ("joined" | "left" | "removed" | "renamed"). It is not
+    // a bubble: it is a centred line telling the thread's life.
     systemEvent?: string | null
     senderCharacterId?: string | null
     senderCharacterAvatarUrl?: string | null
     senderCharacterColor?: string | null
-    // Publication partagee dans ce message (carte-apercu cliquable).
+    // Post shared in this message (clickable preview card).
     sharedPost?: { id: string; image: string | null; text: string; author: string | null; authorAvatar: string | null } | null
     pending?: boolean
     failed?: boolean
@@ -511,7 +511,7 @@ export type MessagesPage = {
         iLeft?: boolean
         canSend?: boolean
         pinned?: PinnedMessage[]
-        /// Qui ecrit en ce moment (noms deja resolus par le serveur).
+        // / Who is typing right now (names already resolved by the server).
         typing?: string[]
     }
     messages: Message[]
@@ -581,7 +581,7 @@ export type ApiResult<T> = {
     session?: SessionInfo | null
 }
 
-// Une personne qui a vu ma story, et sa reaction si elle en a laisse une.
+// Someone who has seen my story, and their reaction if they left one.
 export interface StoryViewer {
     id: string
     name: string

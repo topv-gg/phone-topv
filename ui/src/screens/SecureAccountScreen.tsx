@@ -6,14 +6,14 @@ import { startLink, pollLink, getDeviceToken, profileQr } from '@/topv/link'
 import { VerifiedBadge } from '@/components/VerifiedBadge'
 
 /**
- * SÉCURISER SON COMPTE — l'écran au QR.
+ * SECURING YOUR ACCOUNT — the QR screen.
  *
- * Pas encore sécurisé → un QR à scanner (fabriqué par topv.gg). Une fois
- * sécurisé → le badge « vérifié » + un SECOND QR, celui-ci vers le profil
- * public : la vitrine que le joueur emmène hors du jeu.
+ * Not secured yet → a QR code to scan (built by topv.gg). Once secured → the
+ * “verified” badge plus a SECOND QR code, this one towards the public profile: the
+ * shop window the player takes out of the game.
  *
- * Défensif : une panne réseau propose de réessayer, jamais de casse.
- * Figé au centre du téléphone, aucun défilement.
+ * Defensive: a network failure offers to try again, never a breakage. Fixed in the
+ * centre of the phone, no scrolling.
  */
 export function SecureAccountScreen() {
   const nav = useNav()
@@ -53,7 +53,7 @@ export function SecureAccountScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Une fois sécurisé : on va chercher le QR du profil.
+  // Once secured: we go and fetch the profile's QR code.
   useEffect(() => {
     if (phase !== 'linked') return
     let mort = false
@@ -61,7 +61,7 @@ export function SecureAccountScreen() {
     return () => { mort = true }
   }, [phase])
 
-  // Les textes, dans les 15 langues (une langue inconnue retombe sur l'anglais).
+  // The texts, in all 15 languages (an unknown language falls back to English).
   const loc = getLocale()
   const L = (o: Record<string, string>) => o[loc] ?? o.en
   const T = {

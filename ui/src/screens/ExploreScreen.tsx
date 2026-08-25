@@ -72,7 +72,7 @@ export function AccountRowItem({ account, followBackHint }: { account: AccountRo
     )
 }
 
-// Une page de recherche. 20 comme ailleurs dans le telephone.
+// One page of search results. 20, as everywhere else in the phone.
 const PAGE_RECHERCHE = 20
 
 export function ExploreScreen() {
@@ -82,9 +82,9 @@ export function ExploreScreen() {
     const [loading, setLoading] = useState(false)
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const requestSeq = useRef(0)
-    // Une page de plus quand on approche du bas, comme sur DiscoverPeople.
-    // Avant, l'ecran s'arretait aux 20 premiers et rien ne permettait d'aller
-    // plus loin : l'API elle-meme n'avait pas de page suivante.
+    // One more page as we approach the bottom, as on DiscoverPeople. Before, the
+    // screen stopped at the first 20 and nothing let you go further: the API itself
+    // had no next page.
     const [encore, setEncore] = useState(false)
     const [plus, setPlus] = useState(false)
     const decalage = useRef(0)
@@ -102,11 +102,11 @@ export function ExploreScreen() {
             return
         }
         setLoading(true)
-        // Champ vide : on montre TOUT LE MONDE, sans attendre. Avant, l'ecran
-        // restait blanc jusqu'a la deuxieme lettre — il fallait donc deja
-        // connaitre le nom de la personne qu'on cherchait.
+        // Empty field: we show EVERYONE, without waiting. Before, the screen stayed
+        // blank until the second letter — so you already had to know the name of
+        // the person you were looking for.
         const delai = q.length === 0 ? 0 : 400
-        // Un mot neuf repart du debut.
+        // A new word starts again from the beginning.
         decalage.current = 0
         setEncore(false)
         timer.current = setTimeout(async () => {
@@ -123,7 +123,7 @@ export function ExploreScreen() {
         }
     }, [trimmed, isHashtag])
 
-    // La suite, au defilement.
+    // The rest, on scroll.
     const suivante = async () => {
         if (garde.current || !encore || loading) return
         garde.current = true
@@ -191,18 +191,18 @@ export function ExploreScreen() {
                     </button>
                 )}
 
-                {/* ⚠️ La roue centrale ne sert qu'au TOUT PREMIER chargement,
-                    quand il n'y a encore rien à montrer. À chaque frappe, elle
-                    remplaçait la liste entière : l'écran clignotait. */}
+                {/* ⚠️ The central spinner is only for the VERY FIRST load, when
+                    there is nothing to show yet. On every keystroke it replaced
+                    the whole list: the screen flickered. */}
                 {loading && !results && <CenterSpinner />}
 
                 {!loading && results && results.length === 0 && (
                     <EmptyState icon={<SearchIcon />} title={t('explore.noResults', trimmed)} />
                 )}
 
-                {/* Pendant qu'on cherche, on GARDE la liste précédente :
-                    c'est ce que fait Instagram. Le petit indicateur de la barre
-                    de recherche suffit à dire que ça travaille. */}
+                {/* While the search runs, we KEEP the previous list: that is what
+                    Instagram does. The small indicator in the search bar is
+                    enough to say that something is happening. */}
                 {results && results.length > 0 && (
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-900">
                         {results.map((account) => (

@@ -16,8 +16,8 @@ import { Lightbox } from '@/components/ImageGrid'
 import { fetchNui } from '@/utils/fetchNui'
 import { VoiceMessage } from '@/components/VoiceMessage'
 
-// Un vocal est depose en .weba (WebM audio). On le distingue des videos pour
-// le rendre avec un lecteur audio et non un cadre video vide.
+// A voice message is dropped as .weba (WebM audio). We tell it apart from videos so
+// as to render it with an audio player rather than an empty video frame.
 const AUDIO_RE = /\.(weba|opus|mp3|ogg|m4a|wav|aac)(\?|#|$)/i
 const isAudioFile = (url: string) => AUDIO_RE.test(url)
 import { getPhoneBridgeApi } from '@/utils/phoneBridge'
@@ -39,23 +39,23 @@ export function ChatScreen({
 }) {
     const nav = useNav()
     const { refreshCounts } = useRealtime()
-    // Epingler passe par une action que les ressources anterieures a juillet
-    // 2026 ne connaissent pas : sans ce test, le bouton existerait et le clic
-    // renverrait « action inconnue » chez ces serveurs.
+    // Pinning goes through an action that resources older than July 2026 do not
+    // know: without this test, the button would exist and the click would return
+    // “unknown action” on those servers.
     const { session } = useSession()
     const canPin = hasFeature(session, 'pin')
-    // Meme raison pour les groupes : une ancienne ressource sait AFFICHER un
-    // groupe (elle ouvre un fil par son identifiant) mais pas y repondre, car
-    // l'envoi passe par un champ qu'elle jette. On le dit, au lieu de laisser
-    // le joueur ecrire dans le vide.
+    // Same reason for groups: an older resource can DISPLAY a group (it opens a
+    // thread by its id) but cannot reply in it, because sending goes through a
+    // field it throws away. We say so, rather than letting the player write into
+    // the void.
     const canGroupSend = hasFeature(session, 'groups')
     const canTyping = hasFeature(session, 'typing')
     const canReceipts = hasFeature(session, 'receipts')
     const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId)
     const [other, setOther] = useState<ConversationCharacter | null>(initialOther ?? null)
     const [oneWay, setOneWay] = useState<boolean>(initialOneWay ?? false)
-    // Groupe : il n'y a pas d'« autre cote », l'identite du fil est le groupe
-    // lui-meme. `initialGroupTitle` evite un en-tete vide pendant le chargement.
+    // Group: there is no “other side”, the thread's identity is the group itself.
+    // `initialGroupTitle` avoids an empty header while loading.
     const [group, setGroup] = useState<{
         isGroup: boolean
         title: string
@@ -66,17 +66,19 @@ export function ChatScreen({
     } | null>(initialGroupTitle ? { isGroup: true, title: initialGroupTitle, members: [], canSend: true, iLeft: false, isOwner: false } : null)
     const [showMembers, setShowMembers] = useState(false)
     const [groupPhoto, setGroupPhoto] = useState<string | null>(null)
-    // Messages epingles : l'info qu'on ne veut pas voir remonter le fil.
+    // Pinned messages: the information you do not want to see scroll away up the
+    // thread.
     const [pinned, setPinned] = useState<PinnedMessage[]>([])
-    // « est en train d'ecrire ». Cote reception : la liste vient du fil, et on
-    // l'oublie au bout de 7 s — la duree de vie du signal cote serveur. Sans ce
-    // minuteur, l'indicateur resterait fige jusqu'au prochain rafraichissement.
+    // “is typing”. On the receiving side: the list comes from the thread, and we
+    // forget it after 7 s — the lifetime of the signal on the server side. Without
+    // this timer, the indicator would stay frozen until the next refresh.
     const [typing, setTyping] = useState<string[]>([])
     const typingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastTypingSent = useRef(0)
-    // Mention en cours de frappe. Dans un groupe on propose les MEMBRES : on les
-    // a deja sous la main, et interpeller quelqu'un du fil est le seul usage qui
-    // ait un sens ici (a deux, mentionner son interlocuteur ne sert a rien).
+    // Mention being typed. In a group we offer the MEMBERS: we already have them to
+    // hand, and calling out someone from the thread is the only use that makes
+    // sense here (one to one, mentioning the person you are talking to is
+    // pointless).
     const [mentionQuery, setMentionQuery] = useState<string | null>(null)
     const draftRef = useRef<HTMLInputElement | null>(null)
     const [messages, setMessages] = useState<Message[]>([])
@@ -139,11 +141,11 @@ export function ChatScreen({
             }
             if (!silent) setLoading(true)
             const res = await getMessages(conversationId)
-            // Sans branche d'echec, une coupure laissait l'ecran VIDE : le
-            // joueur lisait « aucun message » et en concluait que son historique
-            // avait ete efface. Indiscernable d'une vraie conversation vide.
-            // `silent` = rafraichissement de fond : on ne detruit pas un
-            // affichage qui fonctionne pour une erreur passagere.
+            // Without a failure branch, a cut left the screen EMPTY: the player
+            // read “no message” and concluded that their history had been wiped.
+            // Indistinguishable from a genuinely empty conversation. `silent` =
+            // background refresh: we do not destroy a working display over a
+            // passing error.
             if (!res.ok && !silent) {
                 setThreadError(errorText(res))
                 setLoading(false)
@@ -183,11 +185,10 @@ export function ChatScreen({
         [conversationId, mergeServerMessages, refreshCounts, scrollToBottom],
     )
 
-    // Ouvrir un DM depuis un PROFIL ne transmet que le personnage, jamais
-    // l'identifiant de conversation : l'ecran s'ouvrait donc vierge sur
-    // « Commence la conversation » alors que le fil existait deja, parfois avec
-    // des dizaines de messages. On cherche la conversation existante AVANT
-    // d'afficher l'etat vide.
+    // Opening a DM from a PROFILE only passes the character, never the conversation
+    // id: the screen therefore opened blank on “Start the conversation” while the
+    // thread already existed, sometimes with dozens of messages. We look for the
+    // existing conversation BEFORE showing the empty state.
     useEffect(() => {
         if (initialConversationId || !initialOther?.id) return
         let cancelled = false
@@ -198,9 +199,9 @@ export function ChatScreen({
                 if (res.ok && res.data) {
                     const list = Array.isArray(res.data) ? res.data : (res.data.conversations ?? [])
                     const found = list.find((c) => c.otherCharacter?.id === initialOther.id)
-                    // Trouve : `loadThread` prend le relais via conversationId.
-                    // Sinon c'est une vraie premiere conversation, et l'etat
-                    // vide est alors le bon affichage.
+                    // Found: `loadThread` takes over via conversationId. Otherwise
+                    // it really is a first conversation, and the empty state is
+                    // then the right display.
                     if (found) {
                         setConversationId(found.id)
                         return
@@ -233,28 +234,28 @@ export function ChatScreen({
         }
     }
 
-    // Une seule piece jointe a la fois : une conversation n'est pas un album,
-    // et cela evite d'avoir a gerer une file d'attente d'envois.
+    // One attachment at a time: a conversation is not an album, and it saves having
+    // to manage a queue of uploads.
     const [pendingMedia, setPendingMedia] = useState<string | null>(null)
-    // Photo agrandie. On reutilise le plein ecran des posts : meme geste, meme
-    // rendu, rien de nouveau a apprendre pour le joueur.
+    // Enlarged photo. We reuse the posts' full screen: same gesture, same
+    // rendering, nothing new for the player to learn.
     const [zoomed, setZoomed] = useState<string | null>(null)
-    // Menu d'actions sur un message (appui long). Reutilise ensuite pour le
-    // transfert : un seul point d'entree pour toutes les actions sur un message.
+    // Action menu on a message (long press). Reused afterwards for forwarding: a
+    // single entry point for every action on a message.
     const [actionMsg, setActionMsg] = useState<Message | null>(null)
-    // Le message qu'on corrige. `null` = on ecrit un nouveau message.
+    // The message being corrected. `null` = we are writing a new message.
     const [editing, setEditing] = useState<Message | null>(null)
     const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    // Transfert : le message a transferer, et la liste des conversations vers
-    // lesquelles l'envoyer (chargee a la demande).
+    // Forwarding: the message to forward, and the list of conversations to send it
+    // to (loaded on demand).
     const [forwarding, setForwarding] = useState<Message | null>(null)
-    // Transferer a quelqu'un a qui on n'a jamais ecrit : sans recherche, la
-    // liste se limitait aux conversations deja ouvertes.
+    // Forwarding to someone you have never written to: without a search, the list
+    // was limited to the conversations already open.
     const [fwdQuery, setFwdQuery] = useState('')
     const [fwdFound, setFwdFound] = useState<AccountRow[]>([])
 
-    // Recherche pour le transfert. Se limiter aux conversations existantes
-    // rendait introuvable quelqu'un a qui on n'a jamais ecrit.
+    // Search for forwarding. Limiting it to existing conversations made someone you
+    // had never written to impossible to find.
     useEffect(() => {
         if (!forwarding) return
         const q = fwdQuery.trim()
@@ -274,17 +275,17 @@ export function ChatScreen({
     const [recSecs, setRecSecs] = useState(0)
     const [emojiOpen, setEmojiOpen] = useState(false)
     const [voiceBusy, setVoiceBusy] = useState(false)
-    // Pourquoi le vocal ne part pas. Sans ca, un refus du micro etait AVALE :
-    // appuyer sur le bouton ne produisait rien du tout — ni son, ni message,
-    // ni erreur — et il n'y avait aucun moyen de savoir ce qui clochait.
+    // Why the voice message is not going out. Without this, a microphone refusal
+    // was SWALLOWED: pressing the button produced nothing at all — no sound, no
+    // message, no error — and there was no way to know what was wrong.
     const [micErreur, setMicErreur] = useState<string | null>(null)
     const recRef = useRef<MediaRecorder | null>(null)
     const micStreamRef = useRef<MediaStream | null>(null)
     const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const [pickerBusy, setPickerBusy] = useState(false)
 
-    // En jeu, on ne prend QUE dans la galerie du telephone : elle renvoie une
-    // adresse deja deposee, photo ou video. Rien n'est televerse d'ici.
+    // In game, we only pick from the phone's gallery: it returns an address that
+    // has already been uploaded, photo or video. Nothing is uploaded from here.
     const pickMedia = async () => {
         if (pickerBusy || blocked) return
         setPickerBusy(true)
@@ -293,14 +294,15 @@ export function ChatScreen({
             const picked = await api.pickGalleryMedia({ mediaFilter: 'all' })
             if (picked?.url) setPendingMedia(picked.url)
         } catch {
-            // Selecteur indisponible : on ne bloque pas la conversation.
+            // Picker unavailable: we do not block the conversation.
         } finally {
             setPickerBusy(false)
         }
     }
 
-    // Depose le vocal via le serveur de jeu (le NUI n'a pas la cle) puis
-    // l'envoie comme piece jointe. Un vocal seul est un message valide.
+    // Uploads the voice message through the game server (the NUI does not hold the
+    // key) then sends it as an attachment. A voice message on its own is a valid
+    // message.
     const finishVoice = async (blob: Blob) => {
         setVoiceBusy(true)
         try {
@@ -352,9 +354,9 @@ export function ChatScreen({
             }
             stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         } catch (e) {
-            // La cause de LOIN la plus frequente en jeu : lb-phone charge TopV
-            // dans une iframe d'un autre domaine sans `allow="microphone"`, et
-            // Chromium refuse alors le micro. Voir REMETTRE-MICRO-LBPHONE.ps1.
+            // By FAR the most frequent cause in game: lb-phone loads TopV in an
+            // iframe from another domain without `allow="microphone"`, and Chromium
+            // then refuses the microphone. See REMETTRE-MICRO-LBPHONE.ps1.
             const nom = (e as { name?: string } | null)?.name ?? ''
             setMicErreur(
                 nom === 'NotAllowedError'
@@ -400,11 +402,11 @@ export function ChatScreen({
 
     const deleteMessage = async (m: Message) => {
         setActionMsg(null)
-        // Optimiste : on marque supprime tout de suite.
+        // Optimistic: we mark it deleted straight away.
         setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, deleted: true, text: '', mediaUrls: [] } : x)))
         const r = await deleteDm(m.id)
         if (!r.ok) {
-            // Echec : on recharge le fil pour retrouver l'etat reel.
+            // Failure: we reload the thread to get the real state back.
             void loadThread(true)
         }
     }
@@ -421,8 +423,8 @@ export function ChatScreen({
             : []
         setFwdConvs(list)
     }
-    // Transferer vers une conversation existante — un personnage ou un GROUPE,
-    // qui est une destination comme une autre.
+    // Forward to an existing conversation — a character or a GROUP, which is a
+    // destination like any other.
     const forwardTo = async (conv: Conversation) => {
         const m = forwarding
         setForwarding(null)
@@ -436,7 +438,7 @@ export function ChatScreen({
         else if (r) phoneToast(t('app.name'), errorText(r))
     }
 
-    // ... ou vers quelqu'un trouve par la recherche.
+    // ... or to someone found through the search.
     const forwardToCharacter = async (characterId: string) => {
         const m = forwarding
         setForwarding(null)
@@ -446,9 +448,9 @@ export function ChatScreen({
         else phoneToast(t('app.name'), errorText(r))
     }
 
-    // Reagir : une BASCULE, rechoisir le meme emoji l'enleve. Une seule
-    // reaction par personne — la regle est tenue par le serveur, partagee avec
-    // le site (lib/dm-actions.ts).
+    // React: a TOGGLE, choosing the same emoji again removes it. One reaction per
+    // person — the rule is held by the server, shared with the site (lib/dm-
+    // actions.ts).
     const reagir = async (m: Message, emoji: string) => {
         setActionMsg(null)
         const r = await reactToDm(m.id, emoji)
@@ -459,9 +461,9 @@ export function ChatScreen({
         }
     }
 
-    // Corriger son message : le texte revient dans la barre d'ecriture, avec un
-    // rappel au-dessus. Un vocal et une piece jointe ne se modifient PAS —
-    // seulement le texte qui les accompagne.
+    // Correcting your message: the text comes back into the writing bar, with a
+    // reminder above it. A voice message and an attachment CANNOT be edited — only
+    // the text that goes with them.
     const commencerEdition = (m: Message) => {
         setActionMsg(null)
         setEditing(m)
@@ -488,16 +490,18 @@ export function ChatScreen({
     }
 
     const send = async (retryMessage?: Message) => {
-        // Corriger passe par la MEME porte qu'ecrire : meme champ, meme bouton.
+        // Correcting goes through the SAME door as writing: same field, same
+        // button.
         if (editing && !retryMessage) {
             await enregistrerEdition()
             return
         }
         const text = retryMessage ? retryMessage.text : draft.trim()
         const media = retryMessage ? (retryMessage.mediaUrls ?? []) : (pendingMedia ? [pendingMedia] : [])
-        // Une piece jointe seule est un message valide : on n'exige plus de texte
-        // des lors qu'il y a quelque chose a envoyer.
-        // Dans un groupe il n'y a pas d'`other` : c'est le fil qui fait adresse.
+        // An attachment on its own is a valid message: we no longer require text as
+        // soon as there is something to send.
+        //
+        // In a group there is no `other`: the thread is the address.
         const isGroup = !!group?.isGroup
         if ((!text && media.length === 0) || sending) return
         if (isGroup ? !conversationId : !other?.id) return
@@ -573,14 +577,14 @@ export function ChatScreen({
     const otherAvatar = other?.avatarUrl || other?.imageUrl || getAvatar(other?.id)
     const activeMembers = (group?.members ?? []).filter((m) => !m.leftAt)
 
-    // Le « @ » en cours de frappe, juste avant le curseur.
+    // The “@” being typed, just before the cursor.
     const updateMentionQuery = (value: string, caret: number) => {
         const m = value.slice(0, caret).match(/(^|\s)@([\p{L}0-9 _-]{0,30})$/u)
         setMentionQuery(m ? (m[2] ?? '') : null)
     }
 
-    // Insere « @[Nom](pseudo) » : le format que le fil, le site et les
-    // notifications savent deja lire. Le joueur, lui, ne voit que le nom.
+    // Inserts “@[Name](handle)”: the format the thread, the site and the
+    // notifications already know how to read. The player only ever sees the name.
     const acceptMention = (member: GroupMember) => {
         const el = draftRef.current
         const caret = el?.selectionStart ?? draft.length
@@ -613,20 +617,20 @@ export function ChatScreen({
                   )
                   .slice(0, 6)
 
-    // Epingler / decrocher. Qui a le droit de decrocher est decide par topv.gg
-    // (celui qui a epingle, ou le createur du groupe) : l'app ne fait que
-    // demander, et affiche le refus tel quel.
+    // Pin / unpin. Who is allowed to unpin is decided by topv.gg (whoever pinned
+    // it, or the group's creator): the app only asks, and shows the refusal as it
+    // comes.
     const togglePin = async (m: Message) => {
         setActionMsg(null)
         const res = await pinDm(m.id, !m.pinnedAt)
         if (res.ok) void loadThread(true)
-        // Ressource pas encore mise a jour : le relais ne connait pas l'action.
+        // Resource not updated yet: the relay does not know the action.
         else if (!canPin || res.error === 'unknown_action') phoneToast(t('app.name'), t('app.needsUpdate'))
         else phoneToast(t('app.name'), errorText(res))
     }
 
-    // Photo du groupe : elle vient de la GALERIE du telephone, qui renvoie une
-    // adresse deja deposee — le NUI n'a ni disque ni cle pour televerser.
+    // Group photo: it comes from the phone's GALLERY, which returns an address that
+    // has already been uploaded — the NUI has neither disk nor key to upload.
     const [photoBusy, setPhotoBusy] = useState(false)
     const changeGroupPhoto = async () => {
         if (photoBusy || !conversationId) return
@@ -639,7 +643,7 @@ export function ChatScreen({
             if (res.ok) void loadThread(true)
             else phoneToast(t('app.name'), errorText(res))
         } catch {
-            /* selecteur indisponible : on ne bloque rien */
+/* picker unavailable: we block nothing */
         } finally {
             setPhotoBusy(false)
         }
@@ -709,8 +713,8 @@ export function ChatScreen({
                     )
                 }
                 right={
-                    // Bloquer vise UNE personne : dans un groupe, la question ne
-                    // se pose pas (le blocage joue a l'entree, pas ici).
+                    // Blocking targets ONE person: in a group the question does not
+                    // arise (blocking applies at the door, not here).
                     other?.id && !isGroupThread ? (
                         <button
                             type="button"
@@ -734,8 +738,8 @@ export function ChatScreen({
                 }
             />
 
-            {/* Membres du groupe — feuille qui monte du bas, comme les autres
-                menus du telephone. On peut consulter, ouvrir un profil, partir. */}
+            {/* Group members — a sheet rising from the bottom, like the phone's
+                other menus. You can browse, open a profile, leave. */}
             {showMembers && isGroupThread && (
                 <div
                     onClick={() => setShowMembers(false)}
@@ -746,7 +750,7 @@ export function ChatScreen({
                         className="max-h-[75%] w-full overflow-y-auto rounded-t-2xl bg-paper pb-[env(safe-area-inset-bottom)] dark:bg-ink topv-noscrollbar"
                     >
                         <div className="sticky top-0 border-b border-zinc-200/70 bg-paper/95 px-4 py-3 text-center text-[13px] font-semibold text-zinc-900 backdrop-blur dark:border-zinc-800/70 dark:bg-ink/95 dark:text-zinc-50">
-                            {/* Photo du groupe — modifiable par le createur. */}
+                            {/* Group photo — editable by the creator. */}
                             <button
                                 type="button"
                                 onClick={() => group?.isOwner && !group.iLeft && void changeGroupPhoto()}
@@ -838,8 +842,9 @@ export function ChatScreen({
                 </div>
             )}
 
-            {/* Épinglés : une adresse, une heure, la règle du groupe — ce qu'on
-                ne veut pas voir disparaître en haut du fil. Un appui y ramène. */}
+            {/* Pinned: an address, a time, the group's rule — what you do not
+                want to see disappear up the thread. A press brings you back to
+                it. */}
             {pinned.length > 0 && (
                 <div className="shrink-0 space-y-1 border-b border-zinc-200/70 bg-paper px-3 py-2 dark:border-zinc-800/70 dark:bg-ink">
                     {pinned.map((p) => (
@@ -863,9 +868,10 @@ export function ChatScreen({
                                         {p.senderCharacterName}
                                     </span>
                                 )}
-                                {/* La mention doit etre un LIEN, jamais sa syntaxe. C'est
-                                    pour ca que la ligne n'est plus un <button> : RichText en
-                                    produit, et un bouton dans un bouton est invalide. */}
+                                {/* A mention must be a LINK, never its syntax.
+                                    That is why the line is no longer a <button>:
+                                    RichText produces some, and a button inside a
+                                    button is invalid. */}
                                 {p.text
                                     ? <RichText
                                         text={p.text}
@@ -912,7 +918,7 @@ export function ChatScreen({
                         )}
                         <div className="space-y-1">
                             {sortedMessages.map((m) => m.systemEvent ? (
-                                // Vie du groupe : une ligne centree, jamais une bulle.
+                                // Group life: a centred line, never a bubble.
                                 <p
                                     key={m.id}
                                     className="mx-auto my-1 w-fit max-w-[85%] rounded-full bg-zinc-100 px-3 py-1 text-center text-[10.5px] text-zinc-500 dark:bg-zinc-800/60 dark:text-zinc-400"
@@ -929,9 +935,9 @@ export function ChatScreen({
                                     className={classNames(
                                         'flex items-end gap-2',
                                         m.fromMe ? 'justify-end' : 'justify-start',
-                                        // De la place sous la bulle quand une pastille de
-                                        // reaction depasse : sans elle, elle chevaucherait le
-                                        // message suivant.
+                                        // Room under the bubble when a reaction
+                                        // pill overhangs: without it, the pill
+                                        // would overlap the next message.
                                         m.reactions && Object.keys(m.reactions).length > 0 && 'mb-3',
                                     )}
                                 >
@@ -953,11 +959,12 @@ export function ChatScreen({
                                         bubble itself only serves to retry a failed send. */}
                                     <div
                                         role="button"
-                                        // Appuyer sur la bulle ouvre ses actions (transferer,
-                                        // epingler, supprimer). Un message rate se renvoie —
-                                        // c'est l'attente evidente dans ce cas precis. Les
-                                        // medias a l'interieur arretent la propagation : les
-                                        // toucher continue de les lire ou de les agrandir.
+                                        // Pressing the bubble opens its actions
+                                        // (forward, pin, delete). A failed message
+                                        // is sent again — that is the obvious
+                                        // expectation in this precise case. The
+                                        // media inside stop propagation: touching
+                                        // them still plays or enlarges them.
                                         onClick={() => {
                                             if (m.failed) { void send(m); return }
                                             if (!m.deleted && !m.pending) setActionMsg(m)
@@ -966,14 +973,18 @@ export function ChatScreen({
                                         onPointerUp={pressEnd}
                                         onPointerLeave={pressEnd}
                                         className={classNames(
-                                            // `relative` : la pastille des reactions se pose a
-                                            // cheval sous la bulle, elle a besoin d'un repere.
+                                            // `relative`: the reactions pill sits
+                                            // astride, under the bubble; it needs a
+                                            // reference point.
                                             'relative max-w-[80%] rounded-2xl px-3 py-1.5 text-left text-[13.5px] leading-snug',
-                                            // MES messages : le LAVIS de flamme du site
-                                            // (`.topv-bulle-mienne`, jetons dans index.css), pour que
-                                            // le DM en jeu et celui de l'app mobile soient identiques.
-                                            // Le texte reste celui du theme : la bulle n'est pas un
-                                            // aplat, du blanc dessus serait illisible en clair.
+                                            // MY messages: the site's flame WASH
+                                            // (`.topv-bulle-mienne`, tokens in
+                                            // index.css), so that the in-game DM
+                                            // and the mobile app's are identical.
+                                            // The text keeps the theme's colour:
+                                            // the bubble is not a solid fill, and
+                                            // white on it would be unreadable in
+                                            // light theme.
                                             m.fromMe
                                                 ? 'rounded-br-md topv-bulle-mienne text-zinc-900 dark:text-zinc-50'
                                                 : 'rounded-bl-md bg-zinc-100 text-zinc-800 dark:bg-zinc-800/80 dark:text-zinc-100',
@@ -981,9 +992,10 @@ export function ChatScreen({
                                             m.failed && 'ring-1 ring-red-500/60 cursor-pointer',
                                         )}
                                     >
-                                        {/* Dans un groupe, savoir QUI parle passe avant le
-                                            message : le nom coiffe la bulle, a la couleur du
-                                            personnage. */}
+                                        {/* In a group, knowing WHO is speaking
+                                            comes before the message: the name
+                                            caps the bubble, in the character's
+                                            colour. */}
                                         {isGroupThread && !m.fromMe && m.senderCharacterName && (
                                             <span
                                                 className="mb-0.5 block text-[10.5px] font-semibold"
@@ -1009,12 +1021,19 @@ export function ChatScreen({
                                                 {t('chat.deleted')}
                                             </span>
                                         )}
-                                        {/* Publication partagee : carte cliquable qui ouvre le post.
-                                            ⚠️ C'etait un <button>, et l'apercu du texte etait rendu BRUT :
-                                            une mention y montrait sa syntaxe. `RichText` la rend cliquable,
-                                            mais il produit des <button> — imbriquer un bouton dans un bouton
-                                            est invalide. La carte est donc une zone cliquable (role="button"),
-                                            ce qui ne change rien au geste et autorise la mention dedans. */}
+                                        {/* Shared post: a clickable card that
+                                            opens the post.
+
+                                            ⚠️ It used to be a <button>, and the
+                                            text preview was rendered RAW: a
+                                            mention showed its syntax there.
+                                            `RichText` makes it clickable, but it
+                                            produces <button> — nesting a button
+                                            inside a button is invalid. The card
+                                            is therefore a clickable area
+                                            (role="button"), which changes nothing
+                                            about the gesture and allows the
+                                            mention inside. */}
                                         {!m.deleted && m.sharedPost && (
                                             <div
                                                 role="button"
@@ -1070,21 +1089,25 @@ export function ChatScreen({
                                         <span
                                             className={classNames(
                                                 'mt-0.5 flex items-center gap-1.5 text-[9px]',
-                                                // Les deux bulles rendent le texte au theme : l'heure
-                                                // est donc la meme des deux cotes.
+                                                // Both bubbles give the text back
+                                                // to the theme: the time is
+                                                // therefore the same on both sides.
                                                 'text-zinc-400 dark:text-zinc-500',
                                                 m.failed && 'text-red-500 dark:text-red-400',
                                             )}
                                         >
                                             {m.failed ? t('chat.sendFailed') : m.pending ? '…' : clockTime(m.createdAt)}
-                                            {/* « modifié » : sans cette marque, corriger un message
-                                                reecrirait le passe en silence. */}
+                                            {/* “edited”: without this mark,
+                                                correcting a message would rewrite
+                                                the past in silence. */}
                                             {m.edited && !m.deleted && (
                                                 <span className="italic opacity-80">({t('common.edit').toLowerCase()})</span>
                                             )}
                                             {m.source === 'web' && <WebBadge />}
-                                            {/* ✓ envoye · ✓✓ lu. Dans un groupe, « lu » = lu par TOUS
-                                                les autres membres — la seule lecture qui ait un sens. */}
+                                            {/* ✓ sent · ✓✓ read. In a group,
+                                                “read” = read by ALL the other
+                                                members — the only reading that
+                                                means anything. */}
                                             {canReceipts && m.fromMe && !m.pending && !m.failed && !m.deleted && (
                                                 <span className={classNames(
                                                     'ml-0.5 inline-flex',
@@ -1097,9 +1120,10 @@ export function ChatScreen({
                                                 </span>
                                             )}
                                         </span>
-                                        {/* LES REACTIONS, a cheval sous la bulle — comme sur le
-                                            site et comme WhatsApp. Posee dedans, une pastille
-                                            deformerait la bulle a chaque ajout. */}
+                                        {/* THE REACTIONS, astride under the
+                                            bubble — as on the site and as in
+                                            WhatsApp. Placed inside, a pill would
+                                            distort the bubble on every addition. */}
                                         {m.reactions && Object.keys(m.reactions).length > 0 && (
                                             <span
                                                 className={classNames(
@@ -1150,8 +1174,8 @@ export function ChatScreen({
                             />
                         </div>
                         <div className="min-h-0 flex-1 overflow-y-auto topv-noscrollbar">
-                            {/* Resultats de recherche d'abord : c'est ce qu'on vient
-                                de demander. */}
+                            {/* Search results first: that is what has just been
+                                asked for. */}
                             {fwdFound.map((r) => {
                                 const ch = r.activeCharacter
                                 if (!ch) return null
@@ -1180,9 +1204,10 @@ export function ChatScreen({
                                         onClick={() => void forwardTo(c)}
                                         className="flex w-full items-center gap-3 px-4 py-2.5 text-left active:bg-zinc-100 dark:active:bg-zinc-900"
                                     >
-                                        {/* `avatarUrl` seul laissait des initiales : la photo
-                                            d'un personnage arrive dans `imageUrl`, et le cache
-                                            local complete le reste. */}
+                                        {/* `avatarUrl` on its own left initials
+                                            behind: a character's photo arrives in
+                                            `imageUrl`, and the local cache fills
+                                            in the rest. */}
                                         <Avatar
                                             url={
                                                 c.isGroup
@@ -1214,9 +1239,9 @@ export function ChatScreen({
                         onClick={(e) => e.stopPropagation()}
                         className="w-full max-w-md rounded-t-2xl bg-paper p-2 pb-6 dark:bg-ink"
                     >
-                        {/* REAGIR — la rangee AVANT les actions, comme sur le
-                            site : c'est le geste le plus frequent, il ne doit
-                            pas se meriter au bout d'une liste. */}
+                        {/* REACT — the row BEFORE the actions, as on the site: it
+                            is the most frequent gesture, it must not have to be
+                            earned at the end of a list. */}
                         <div className="flex items-center justify-around px-2 pb-2 pt-1">
                             {['👍', '❤️', '😂', '😮', '😢', '🙏'].map((e) => (
                                 <button
@@ -1236,9 +1261,9 @@ export function ChatScreen({
                         >
                             {t('chat.forward')}
                         </button>
-                        {/* MODIFIER — seulement les siens. Un vocal ou un media
-                            gardent leur piece jointe : c'est le texte qui les
-                            accompagne qu'on corrige. */}
+                        {/* EDIT — only your own. A voice message or a media keeps
+                            its attachment: it is the text that goes with them
+                            that gets corrected. */}
                         {actionMsg.fromMe && !actionMsg.deleted && (
                             <button
                                 type="button"
@@ -1297,8 +1322,8 @@ export function ChatScreen({
                 </div>
             )}
 
-            {/* Le choix du membre a mentionner, juste au-dessus de la barre :
-                dans un telephone, une liste qui descend sortirait de l'ecran. */}
+            {/* The choice of member to mention, just above the bar: in a phone, a
+                list that drops downwards would fall off the screen. */}
             {mentionMatches.length > 0 && (
                 <div className="shrink-0 border-t border-zinc-200/70 bg-paper px-2 py-1.5 dark:border-zinc-800/70 dark:bg-ink">
                     <div className="flex gap-2 overflow-x-auto topv-noscrollbar">
@@ -1324,7 +1349,7 @@ export function ChatScreen({
                 </div>
             )}
 
-            {/* Apercu de la piece jointe choisie, au-dessus de la barre. */}
+            {/* Preview of the chosen attachment, above the bar. */}
             {pendingMedia && (
                 <div className="flex shrink-0 items-center gap-2 border-t border-zinc-200/70 bg-paper px-3 pt-2 dark:border-zinc-800/70 dark:bg-ink">
                     <div className="relative">
@@ -1344,15 +1369,16 @@ export function ChatScreen({
                 </div>
             )}
 
-            {/* Parti du groupe : le fil reste lisible, la barre d'ecriture non. */}
+            {/* Left the group: the thread stays readable, the writing bar does
+                not. */}
             {isGroupThread && (!canGroupSend || (group && !group.canSend)) ? (
                 <div className="shrink-0 border-t border-zinc-200/70 bg-paper px-4 pb-7 pt-3 text-center text-[12px] italic text-zinc-400 dark:border-zinc-800/70 dark:bg-ink dark:text-zinc-500">
                     {!canGroupSend ? t('group.needsUpdate') : t('group.left')}
                 </div>
             ) : (
             <div className="relative flex shrink-0 items-center gap-2 border-t border-zinc-200/70 bg-paper px-3 pb-7 pt-2.5 dark:border-zinc-800/70 dark:bg-ink">
-                {/* CE QU'ON CORRIGE, juste au-dessus du champ. Sans ce rappel,
-                    on modifie un message sans le voir. */}
+                {/* WHAT WE ARE CORRECTING, just above the field. Without this
+                    reminder, you edit a message without seeing it. */}
                 {editing && (
                     <div className="absolute inset-x-0 -top-11 z-20 flex items-center gap-2 border-t border-zinc-200/70 bg-paper px-3 py-2 dark:border-zinc-800/70 dark:bg-ink">
                         <span className="h-8 w-[3px] shrink-0 rounded bg-orange-500" />
@@ -1380,8 +1406,8 @@ export function ChatScreen({
                         </button>
                     </div>
                 )}
-                {/* Un micro qui refuse doit se VOIR. Avant, le bouton du vocal
-                    ne produisait rien et rien n'expliquait pourquoi. */}
+                {/* A microphone that refuses must be SEEN. Before, the voice
+                    button produced nothing and nothing explained why. */}
                 {micErreur && (
                     <button
                         type="button"
@@ -1391,8 +1417,8 @@ export function ChatScreen({
                         {micErreur}
                     </button>
                 )}
-                {/* Le clavier d'emoji se pose AU-DESSUS de la barre : plus bas,
-                    il sortirait de l'ecran du telephone. */}
+                {/* The emoji keyboard sits ABOVE the bar: any lower and it would
+                    fall off the phone's screen. */}
                 <EmojiPanel
                     open={emojiOpen}
                     onPick={(e) => insertAtCaret(draftRef, draft, setDraft, e)}
@@ -1466,8 +1492,9 @@ export function ChatScreen({
                         (!draft.trim() && !pendingMedia) ||
                         sending ||
                         blocked ||
-                        // Dans un groupe c'est le fil qui fait adresse : exiger un
-                        // `other` ici aurait grise le bouton d'envoi pour toujours.
+                        // In a group the thread is the address: requiring an
+                        // `other` here would have greyed out the send button for
+                        // ever.
                         (isGroupThread ? !conversationId : !other?.id)
                     }
                     onClick={() => void send()}

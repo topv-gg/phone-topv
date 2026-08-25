@@ -18,10 +18,10 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
     const captionRef = useRef<HTMLInputElement | null>(null)
     const [publishing, setPublishing] = useState(false)
 
-    // Mentionner quelqu'un dans la legende, comme sur Instagram. On ecrit la
-    // forme DURABLE (`@[Nom](pseudo)` pour un personnage, `@pseudo` pour un
-    // roliste) : la story ne transporte que sa legende, c'est donc elle qui
-    // doit porter de quoi retrouver la personne visee.
+    // Mentioning someone in the caption, as on Instagram. We write the DURABLE form
+    // (`@[Nom](pseudo)` for a character, `@pseudo` for a roleplayer): a story
+    // carries nothing but its caption, so the caption itself must carry what is
+    // needed to find the person meant.
     const [mentionQuery, setMentionQuery] = useState<string | null>(null)
     const [mentionResults, setMentionResults] = useState<AccountRow[]>([])
     const [mentionSearching, setMentionSearching] = useState(false)
@@ -37,8 +37,8 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
             setMentionResults([])
             return
         }
-        // Les deux panneaux se posent au meme endroit : le clavier d'emoji
-        // laisse la place a la liste des personnes.
+        // Both panels sit in the same place: the emoji keyboard makes way for the
+        // list of people.
         setEmojiOpen(false)
         setMentionQuery(m[2] ?? '')
     }
@@ -52,8 +52,8 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
             return
         }
         setMentionSearching(true)
-        // Les reponses peuvent arriver dans le desordre : un numero de tour
-        // evite qu'un « @to » en retard ecrase le « @tob » plus frais.
+        // Answers can arrive out of order: a turn number stops a late “@to” from
+        // overwriting the fresher “@tob”.
         const timer = setTimeout(async () => {
             const res = await searchAccounts(mentionQuery, 8)
             if (seq !== mentionSeqRef.current) return
@@ -71,7 +71,7 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
         if (!m) return
         const start = caret - (m[2]?.length ?? 0) - 1
         const ch = row.activeCharacter
-        // Un personnage se nomme par SON nom ; un roliste par son pseudo.
+        // A character is named by THEIR name; a roleplayer by their handle.
         const inserted = ch?.name
             ? `@[${ch.name.replace(/[[\]()]/g, '')}](${row.username}) `
             : `@${row.username} `
@@ -139,7 +139,7 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
                 )}
                 {caption.trim() && (
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pb-6 pt-10">
-                        {/* Ce que verra le lecteur : « @Nom », pas la syntaxe. */}
+                        {/* What the reader will see: “@Name”, not the syntax. */}
                         <RichText
                             text={caption}
                             className="whitespace-pre-wrap break-words text-center text-[14px] leading-snug text-white"
@@ -150,7 +150,8 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
             </div>
 
             <div className="relative flex shrink-0 items-center gap-2 border-t border-white/10 px-3 pb-7 pt-2.5">
-                {/* Fond noir impose : une story ne se regarde jamais en clair. */}
+                {/* Black background enforced: a story is never watched in light
+                    theme. */}
                 <EmojiPanel
                     dark
                     open={emojiOpen}
@@ -174,8 +175,8 @@ export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; 
                                 <button
                                     key={row.username}
                                     type="button"
-                                    // onMouseDown : le champ perd le focus au clic,
-                                    // et la liste disparaitrait avant lui.
+                                    // onMouseDown: the field loses focus on click,
+                                    // and the list would disappear before it.
                                     onMouseDown={(e) => {
                                         e.preventDefault()
                                         acceptMention(row)

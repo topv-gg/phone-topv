@@ -7,18 +7,19 @@ import { Avatar } from '@/components/Avatar'
 import { SendIcon } from '@/components/icons'
 import { CenterSpinner } from '@/components/ui'
 
-// Bouton « Envoyer en message » sur un post : ouvre la liste des conversations
-// et envoie le post choisi en DM (une reference, pas une copie — l'apercu est
-// reconstruit a l'affichage). Le meme selecteur que le transfert de message.
+// “Send as message” button on a post: opens the list of conversations and sends the
+// chosen post as a DM (a reference, not a copy — the preview is rebuilt at display
+// time). The same picker as message forwarding.
 //
-// ⚠️ IL N'ATTEIGNAIT QUE LES FILS DEJA OUVERTS — et meme pas tous.
-// Deux trous, combles le 05/08/2026 :
-//   · aucune RECHERCHE : impossible d'envoyer a un personnage a qui l'on
-//     n'avait jamais ecrit. Pour un nouveau joueur, la feuille etait vide et
-//     le partage n'existait donc pas du tout ;
-//   · les GROUPES etaient filtres (`c.otherCharacter` est nul sur un groupe),
-//     alors que le serveur sait parfaitement recevoir une publication dans un
-//     groupe. On perdait la moitie de la messagerie sans que rien ne le dise.
+// ⚠️ IT ONLY REACHED THREADS ALREADY OPEN — and not even all of them. Two gaps,
+// filled on 05/08/2026:
+//
+// · no SEARCH: impossible to send to a character you had never written to. For a
+// new player the sheet was empty, so sharing simply did not exist;
+//
+// · GROUPS were filtered out (`c.otherCharacter` is null on a group), whereas the
+// server is perfectly able to receive a post in a group. Half the messaging was
+// lost without anything saying so.
 export function ShareToDm({ postId }: { postId: string }) {
     const [open, setOpen] = useState(false)
     const [convs, setConvs] = useState<Conversation[] | null>(null)
@@ -39,8 +40,8 @@ export function ShareToDm({ postId }: { postId: string }) {
         setConvs(list)
     }
 
-    // La recherche attend que la frappe se pose : sans ca, « Roberto » lance
-    // six requetes et c'est la plus lente qui gagne.
+    // The search waits for the typing to settle: without that, “Roberto” fires six
+    // requests and the slowest one wins.
     const minuterie = useRef<number | null>(null)
     useEffect(() => {
         if (minuterie.current !== null) window.clearTimeout(minuterie.current)
@@ -55,8 +56,8 @@ export function ShareToDm({ postId }: { postId: string }) {
         return () => { if (minuterie.current !== null) window.clearTimeout(minuterie.current) }
     }, [q])
 
-    // N'IMPORTE QUELLE publication peut devenir une story : le serveur en
-    // fabrique la carte, y compris quand il n'y a pas de photo.
+    // ANY post can become a story: the server builds the card, including when there
+    // is no photo.
     const [storyState, setStoryState] = useState<'idle' | 'sending' | 'done'>('idle')
     const shareAsStory = async () => {
         if (storyState === 'sending') return
@@ -71,7 +72,7 @@ export function ShareToDm({ postId }: { postId: string }) {
         }
     }
 
-    /** Envoi termine : on le DIT, puis on referme. */
+/** Sending finished: we SAY so, then we close. */
     const fini = (ok: boolean) => {
         setSending(false)
         setOpen(false)
@@ -81,7 +82,7 @@ export function ShareToDm({ postId }: { postId: string }) {
     const sendTo = async (c: Conversation) => {
         if (sending) return
         setSending(true)
-        // Un groupe n'a pas d'« autre cote » : c'est le FIL qui est l'adresse.
+        // A group has no “other side”: the THREAD is the address.
         const r = c.isGroup
             ? await sendToGroup(c.id, '', [], postId)
             : c.otherCharacter?.id
@@ -91,7 +92,8 @@ export function ShareToDm({ postId }: { postId: string }) {
         fini(r.ok)
     }
 
-    /** Envoyer a un personnage jamais contacte : le fil se cree a l'envoi. */
+/** Sending to a character never contacted before: the thread is created on
+       send. */
     const envoyerA = async (a: AccountRow) => {
         const perso = a.activeCharacter
         if (!perso || sending) return
@@ -100,12 +102,13 @@ export function ShareToDm({ postId }: { postId: string }) {
         fini(r.ok)
     }
 
-    // Les fils ou l'on peut ECRIRE : un groupe quitte reste lisible mais muet,
-    // et un fil sans personnage en face n'a pas de destinataire.
+    // The threads where one can WRITE: a group you have left stays readable but
+    // mute, and a thread with no character on the other side has no recipient.
     const fils = (convs ?? []).filter(
         (c) => (c.isGroup ? !c.iLeft && c.canSend !== false : !!c.otherCharacter),
     )
-    // Un mort ne recoit plus rien, et on ne s'envoie pas une publication a soi.
+    // A dead character receives nothing any more, and you do not send a post to
+    // yourself.
     const gens = (trouves ?? []).filter(
         (a) => !a.isSelf && a.activeCharacter && a.activeCharacter.status !== 'deceased',
     )
@@ -134,8 +137,8 @@ export function ShareToDm({ postId }: { postId: string }) {
                         <div className="px-4 py-3 text-[14px] font-semibold text-zinc-900 dark:text-zinc-50">
                             {t('share.sendTo')}
                         </div>
-                        {/* Reprendre la publication en story : c'est un partage
-                            aussi, il a sa place ici plutot que dans un 2e menu. */}
+                        {/* Reposting the publication as a story: that is a share
+                            too, so it belongs here rather than in a second menu. */}
                         <button
                                 type="button"
                                 onClick={() => void shareAsStory()}
@@ -147,8 +150,8 @@ export function ShareToDm({ postId }: { postId: string }) {
                                     {storyState === 'done' ? t('story.shared') : t('story.shareToStory')}
                                 </span>
                             </button>
-                        {/* La recherche : c'est elle qui ouvre le partage a tout
-                            le monde, et pas seulement aux fils deja commences. */}
+                        {/* The search: it is what opens sharing to everyone, and
+                            not only to threads already started. */}
                         <div className="mx-3 mb-2">
                             <input
                                 value={q}
@@ -199,7 +202,7 @@ export function ShareToDm({ postId }: { postId: string }) {
                                     </button>
                                 ))
                             ) : (
-                                // Une feuille vide sans un mot est un cul-de-sac.
+                                // An empty sheet without a word is a dead end.
                                 <div className="px-6 py-6 text-center text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400">
                                     {t('share.noConversations')}
                                 </div>

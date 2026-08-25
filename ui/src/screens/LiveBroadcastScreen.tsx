@@ -66,12 +66,11 @@ export function LiveBroadcastScreen() {
         }
     }, [])
 
-    // Ranger le telephone doit COUPER le direct. Le nettoyage React ci-dessus
-    // ne suffit pas : l'application n'est jamais demontee quand le telephone se
-    // ferme, donc il ne s'executait tout simplement pas. Sans ce handler, le
-    // joueur rangeait son telephone et continuait a diffuser son ECRAN DE JEU
-    // BRUT — vue a la premiere personne, menus, inventaire — indefiniment,
-    // sans le savoir.
+    // Putting the phone away must CUT the live. The React cleanup above is not
+    // enough: the application is never unmounted when the phone closes, so it
+    // simply did not run. Without this handler, the player put their phone away and
+    // carried on broadcasting their RAW GAME SCREEN — first-person view, menus,
+    // inventory — indefinitely, without knowing.
     useEffect(() => {
         let off: (() => void) | undefined
         let cancelled = false
@@ -85,7 +84,7 @@ export function LiveBroadcastScreen() {
                     if (streamRef.current) void stopLive(streamRef.current)
                 })
             } catch {
-                // Pont indisponible : le filet cote serveur prend le relais.
+                // Bridge unavailable: the server-side net takes over.
             }
         })()
         return () => {
@@ -312,8 +311,8 @@ export function LiveBroadcastScreen() {
                                     <span className="shrink-0 font-semibold text-white/90">
                                         {m.characterName ?? '?'}
                                     </span>
-                                    {/* Meme correction que sur l'ecran du spectateur : la mention
-                                        doit etre un lien, jamais sa syntaxe. */}
+                                    {/* Same fix as on the viewer's screen: the
+                                        mention must be a link, never its syntax. */}
                                     <RichText
                                         text={m.text}
                                         allowUsernameFallback

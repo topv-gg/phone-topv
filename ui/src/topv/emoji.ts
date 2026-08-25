@@ -1,8 +1,8 @@
-// Jeu d'emoji du telephone — copie conforme de `src/lib/emoji-set.ts` du site,
-// pour que les deux surfaces proposent exactement les memes.
+// The phone's emoji set — an exact copy of the site's `src/lib/emoji-set.ts`, so
+// that both surfaces offer precisely the same ones.
 //
-// Les onglets sont des pictogrammes et non des mots : le telephone parle onze
-// langues, et un clavier d'emoji se lit tres bien sans texte.
+// The tabs are pictograms rather than words: the phone speaks eleven languages, and
+// an emoji keyboard reads perfectly well without text.
 
 export type EmojiGroup = { key: string; icon: string; emojis: string[] }
 

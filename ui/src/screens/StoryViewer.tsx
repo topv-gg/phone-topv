@@ -44,9 +44,8 @@ export function StoryViewer({
     )
     const story = stories[si]
 
-    // Qui a vu cette story. Demande UNIQUEMENT a l'ouverture de la feuille :
-    // une story peut etre vue par des centaines de personnes, et personne ne
-    // consulte ses vues en boucle.
+    // Who has seen this story. Requested ONLY when the sheet opens: a story can be
+    // seen by hundreds of people, and nobody checks their views on a loop.
     const [vuesOuvertes, setVuesOuvertes] = useState(false)
     const [vues, setVues] = useState<Vue[] | null>(null)
     // A story can be a VIDEO (clip from the phone's camera): it plays in full,
@@ -354,10 +353,10 @@ export function StoryViewer({
                     // else's story) so it doesn't overlap it.
                     group.isMine ? 'bottom-0 pb-8' : 'bottom-16 pb-3',
                 )}>
-                    {/* La legende contient des mentions ecrites
-                        `@[Nom](pseudo)` : brutes, elles montraient leur syntaxe
-                        au lecteur. Le rendu commun les affiche « @Nom » et les
-                        rend cliquables vers la carte du personnage. */}
+                    {/* The caption contains mentions written `@[Nom](pseudo)`:
+                        raw, they showed their syntax to the reader. The shared
+                        renderer displays them as “@Name” and makes them clickable
+                        through to the character's card. */}
                     <RichText
                         text={story.caption}
                         characterMentions={story.captionMentions ?? null}
@@ -414,8 +413,8 @@ export function StoryViewer({
                     )}
                 </div>
             )}
-            {/* QUI A VU — la meme information que sur le site, en jeu.
-                Elle glisse du bas et se referme en touchant a cote. */}
+            {/* WHO HAS SEEN — the same information as on the site, in game. It
+                slides up from the bottom and closes on a touch beside it. */}
             {vuesOuvertes && (
                 <div
                     className="absolute inset-0 z-50 flex items-end bg-black/70"
@@ -438,10 +437,10 @@ export function StoryViewer({
                             </div>
                         ) : (
                             vues.map((v) => (
-                                // Voir qui a regarde sans pouvoir ouvrir sa fiche
-                                // est une impasse. On ouvre le profil DIRECTEMENT
-                                // sur le personnage qui a vu, comme le fait deja
-                                // l'en-tete de la story.
+                                // Seeing who watched without being able to open
+                                // their profile is a dead end. We open the profile
+                                // DIRECTLY on the character who saw it, as the
+                                // story's header already does.
                                 <button
                                     key={v.id}
                                     type="button"

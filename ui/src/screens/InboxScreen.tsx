@@ -59,18 +59,18 @@ function GroupAvatar({ c }: { c: Conversation }) {
 export function InboxScreen() {
     const nav = useNav()
     const { session } = useSession()
-    // La ressource installee sait-elle relayer ces actions ? Une version
-    // anterieure ne les connait pas : on masque le bouton plutot que de laisser
-    // le joueur tomber sur « action inconnue ».
+    // Does the installed resource know how to relay these actions? An earlier
+    // version does not: we hide the button rather than let the player run into
+    // “unknown action”.
     const canGroups = hasFeature(session, 'groups')
     const canHide = hasFeature(session, 'hide')
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    // Appui long sur une ligne → menu (supprimer).
+    // Long press on a row → menu (delete).
     const [actionConv, setActionConv] = useState<Conversation | null>(null)
     const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    // Creation d'un groupe.
+    // Creating a group.
     const [creating, setCreating] = useState(false)
     const [groupTitle, setGroupTitle] = useState('')
     const [groupQuery, setGroupQuery] = useState('')
@@ -109,8 +109,9 @@ export function InboxScreen() {
 
     useRealtimeEvent('any', () => void load(true))
 
-    // Recherche de personnages a reunir. Se limiter a ses conversations aurait
-    // rendu introuvable quelqu'un croise en jeu mais jamais contacte.
+    // Search for characters to bring together. Limiting it to your own
+    // conversations would have made someone met in game but never contacted
+    // impossible to find.
     useEffect(() => {
         if (!creating) return
         const q = groupQuery.trim()
@@ -154,13 +155,13 @@ export function InboxScreen() {
 
     const removeConversation = async (c: Conversation) => {
         setActionConv(null)
-        // Retrait immediat de la liste : attendre l'aller-retour donnerait
-        // l'impression que le geste n'a pas ete pris.
+        // Immediate removal from the list: waiting for the round trip would give
+        // the impression that the gesture had not been taken.
         setConversations((prev) => prev.filter((x) => x.id !== c.id))
         const res = await hideConversation(c.id)
         if (!res.ok) {
-            // Ressource pas encore mise a jour : le relais ne connait pas
-            // l'action. On le DIT, au lieu de laisser un echec muet.
+            // Resource not updated yet: the relay does not know the action. We SAY
+            // so, rather than leave a silent failure.
             const stale = !canHide || res.error === 'unknown_action'
             phoneToast(t('app.name'), stale ? t('app.needsUpdate') : errorText(res))
             void load(true)
@@ -321,11 +322,12 @@ export function InboxScreen() {
                                             {c.unreadCount > 99 ? '99+' : c.unreadCount}
                                         </span>
                                     )}
-                                    {/* Retirer cette conversation de SA boite. Un appui long
-                                        marche aussi, mais il ne se devine pas : ce point de
-                                        suspension est le seul moyen visible. PAS un <button> —
-                                        la ligne en est deja un, et imbriquer deux boutons rend
-                                        le tout ininterpretable. */}
+                                    {/* Remove this conversation from YOUR inbox.
+                                        A long press works too, but it cannot be
+                                        guessed: this ellipsis is the only visible
+                                        way. NOT a <button> — the row is already
+                                        one, and nesting two buttons makes the
+                                        whole thing uninterpretable. */}
                                     {(
                                         <span
                                             role="button"
@@ -349,7 +351,7 @@ export function InboxScreen() {
                 )}
             </div>
 
-            {/* Appui long sur une conversation → la retirer de SA boite. */}
+            {/* Long press on a conversation → remove it from YOUR inbox. */}
             {actionConv && (
                 <div
                     onClick={() => setActionConv(null)}
@@ -377,7 +379,7 @@ export function InboxScreen() {
                 </div>
             )}
 
-            {/* Creation d'un groupe, directement depuis le telephone. */}
+            {/* Creating a group, straight from the phone. */}
             {creating && (
                 <div className="absolute inset-0 z-50 flex flex-col bg-paper dark:bg-ink">
                     <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-200/70 px-3 dark:border-zinc-800/70">

@@ -191,7 +191,7 @@ export function ReactionBar({ post, onCommentTap }: { post: Post; onCommentTap?:
                 )}
             </button>
 
-            {/* Envoyer ce post en message prive. */}
+            {/* Send this post as a private message. */}
             <ShareToDm postId={post.id} />
 
             <style>{`

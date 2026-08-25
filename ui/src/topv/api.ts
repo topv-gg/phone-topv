@@ -104,15 +104,15 @@ function harvestAvatars(value: unknown): void {
 }
 
 /**
- * LA VERSION DE CETTE INTERFACE, envoyee a chaque appel.
+ * THE VERSION OF THIS INTERFACE, sent on every call.
  *
- * ⚠️ Sans elle, impossible de savoir quelle version tourne chez un joueur : le
- * 09/08, les traces serveur disaient « vieille interface » pendant que les
- * journaux disaient « nouvel index.html charge ». Un ancien cadre reste vivant
- * apres un reenregistrement, et c'est LUI qui appelait.
+ * ⚠️ Without it, there is no way to know which version is running on a player's
+ * machine: on 09/08, the server traces said “old interface” while the logs said
+ * “new index.html loaded”. An old frame stays alive after a re-registration, and it
+ * was THAT one calling.
  *
- * A changer a chaque publication. C'est une chaine, pas une date calculee :
- * elle doit etre figee dans le build.
+ * To be changed on every publication. It is a string, not a computed date: it has
+ * to be frozen into the build.
  */
 export const UI_BUILD = '2026-08-11-c'
 
@@ -120,10 +120,10 @@ async function call<T>(action: string, payload?: Record<string, unknown>): Promi
     try {
         const res = await fetchNui<ApiResult<T>>(NUI_API_ENDPOINT, {
             action,
-            // Le jeton de l'appareil (si le compte est sécurisé) : c'est LA
-            // preuve que c'est bien le joueur, pas un serveur qui usurpe son
-            // Discord. Il vit dans le stockage local, posé à la liaison par QR.
-            // Étape 2a : on l'envoie, le serveur le NOTE (aucun refus encore).
+            // The device token (if the account is secured): it is THE proof that
+            // this really is the player, not a server impersonating their Discord.
+            // It lives in local storage, placed there when linking by QR code. Step
+            // 2a: we send it, the server NOTES it (no refusal yet).
             payload: { ...(payload ?? {}), uiBuild: UI_BUILD, deviceToken: getDeviceToken() },
         })
         if (!res || typeof res !== 'object') {
@@ -243,10 +243,9 @@ export const getFollowers = (username: string, cursor?: string | null, limit = 2
 export const getFollowing = (username: string, cursor?: string | null, limit = 20, q?: string) =>
     call<AccountsPage>('account.following', { username, cursor: cursor ?? undefined, limit, q: q || undefined })
 
-// `characterId` = le personnage DONT on regarde le profil. Le serveur en a
-// besoin pour enregistrer QUI est suivi : le fil in-game filtre la-dessus.
-// Absent depuis les ecrans de suggestions -> repli serveur sur le personnage
-// principal de la cible.
+// `characterId` = the character WHOSE profile is being looked at. The server needs
+// it to record WHO is being followed: the in-game feed filters on that. Absent from
+// the suggestion screens -> the server falls back to the target's main character.
 export const followAccount = (
     username: string,
     action: 'follow' | 'unfollow' | 'toggle' = 'toggle',
@@ -291,12 +290,12 @@ export const manageGroup = (payload: {
 export const deleteDm = (messageId: string) =>
     call<{ ok: boolean }>('dm.delete', { messageId })
 
-// Supprimer une conversation de SA boite. Rien n'est efface chez les autres.
+// Remove a conversation from YOUR inbox. Nothing is erased for anyone else.
 export const hideConversation = (conversationId: string) =>
     call<{ ok: boolean }>('dm.hide', { conversationId })
 
-// « est en train d'ecrire ». Appelee au plus une fois toutes les 4 s tant que le
-// joueur tape : le cout d'une requete compte, ici plus qu'ailleurs.
+// “is typing”. Called at most once every 4 s while the player types: the cost of a
+// request counts, here more than elsewhere.
 export const sendTyping = (conversationId: string) =>
     call<{ ok: boolean }>('dm.typing', { conversationId })
 
@@ -304,13 +303,13 @@ export const sendTyping = (conversationId: string) =>
 export const pinDm = (messageId: string, pinned: boolean) =>
     call<{ ok: boolean; pinned: boolean }>('dm.pin', { messageId, pinned })
 
-// Reagir a un message : c'est une BASCULE, rechoisir le meme emoji l'enleve.
-// Une seule reaction par personne — la regle est tenue par le serveur.
+// React to a message: it is a TOGGLE, choosing the same emoji again removes it. One
+// reaction per person — the rule is held by the server.
 export const reactToDm = (messageId: string, reaction: string) =>
     call<{ ok: boolean; reactions: Record<string, string[]> }>('dm.react', { messageId, reaction })
 
-// Corriger SON message. Seul le texte : un vocal ou une piece jointe ne se
-// modifient pas, seulement ce qui les accompagne.
+// Correct YOUR message. The text only: a voice message or an attachment cannot be
+// edited, only what goes with them.
 export const editDm = (messageId: string, text: string) =>
     call<{ ok: boolean; text: string }>('dm.edit', { messageId, text })
 
@@ -359,8 +358,8 @@ export const getStoryFeed = () => call<StoryFeed>('story.feed')
 export const createStory = (imageUrl: string, caption?: string | null) =>
     call<Story>('story.create', { imageUrl, caption: caption || undefined })
 
-// Republier une PUBLICATION en story : topv.gg en fabrique la carte (auteur,
-// texte, photo). Marche donc aussi pour une publication sans photo.
+// Republish a POST as a story: topv.gg builds its card (author, text, photo). So it
+// works for a post without a photo too.
 export const createStoryFromPost = (postId: string) =>
     call<Story>('story.create', { postId })
 
@@ -371,8 +370,8 @@ export const markStorySeen = (storyId: string) =>
 export const reactToStory = (storyId: string) =>
     call<{ ok?: boolean; reacted?: boolean }>('story.react', { storyId })
 
-// Qui a vu ma story. Le telephone n'affichait qu'un total : on voyait « 3 »
-// sans jamais savoir qui. Le serveur refuse si la story n'est pas la notre.
+// Who has seen my story. The phone only showed a total: you saw “3” without ever
+// knowing who. The server refuses if the story is not ours.
 export const storyViewers = (storyId: string) =>
     call<{ count: number; viewers: StoryViewer[] }>('story.viewers', { storyId })
 

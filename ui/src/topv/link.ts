@@ -2,14 +2,14 @@ import { TOPV_WEB_BASE } from '@/constants'
 import { getLocale } from '@/topv/i18n'
 
 /**
- * LIER CE TÉLÉPHONE EN JEU À UN COMPTE — côté interface.
+ * LINK THIS IN-GAME PHONE TO AN ACCOUNT — interface side.
  *
- * On parle DIRECTEMENT à topv.gg (comme le fait déjà l'image des lives), jamais
- * via le serveur de jeu : le `deviceSecret` et le jeton final ne doivent
- * transiter que par ici. C'est ce qui rend le lien étanche.
+ * We speak DIRECTLY to topv.gg (as the lives' image already does), never through
+ * the game server: the `deviceSecret` and the final token must travel through here
+ * and nowhere else. That is what makes the link watertight.
  *
- * ⚠️ Rien n'est encore branché sur une vérification : poser un jeton ne change
- * rien tant que le « verrou » n'est pas activé côté serveur (posé en dernier).
+ * ⚠️ Nothing is wired to a verification yet: placing a token changes nothing as
+ * long as the “lock” is not switched on server side (put in place last).
  */
 
 const TOKEN_KEY = 'topv:device-token'
@@ -20,13 +20,13 @@ export function getDeviceToken(): string | null {
 }
 
 function setDeviceToken(t: string) {
-  try { localStorage.setItem(TOKEN_KEY, t) } catch { /* mode privé */ }
+  try { localStorage.setItem(TOKEN_KEY, t) } catch { /* private mode */ }
 }
 
 export async function startLink(): Promise<{ code: string; deviceSecret: string; qrImage: string } | null> {
   try {
-    // On envoie la langue du joueur : le QR l'inclut dans son adresse, la page
-    // /security s'ouvre donc directement dans SA langue quand il la scanne.
+    // We send the player's language: the QR code includes it in its address, so the
+    // /security page opens directly in THEIR language when they scan it.
     const r = await fetch(`${TOPV_WEB_BASE}/api/phone-link/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,8 +42,8 @@ export async function startLink(): Promise<{ code: string; deviceSecret: string;
 }
 
 /**
- * Le QR du PROFIL, une fois sécurisé. On présente le `deviceToken` (preuve) et
- * on récupère l'adresse publique du profil + son QR à afficher.
+ * The PROFILE's QR code, once secured. We present the `deviceToken` (proof) and get
+ * back the profile's public address plus its QR code to display.
  */
 export async function profileQr(): Promise<{ profileUrl: string; qrImage: string; username: string } | null> {
   const deviceToken = getDeviceToken()
@@ -64,25 +64,25 @@ export async function profileQr(): Promise<{ profileUrl: string; qrImage: string
 }
 
 /**
- * MON JETON VAUT-IL ENCORE QUELQUE CHOSE ?
+ * IS MY TOKEN STILL WORTH ANYTHING?
  *
- * Quand le verrou refuse une requête, les routes en jeu renvoient `200` avec du
- * VIDE — l'app ne peut donc pas distinguer « je suis verrouillé » de « je n'ai
- * rien ». Un joueur dont le jeton avait disparu voyait un fil vide et croyait
- * l'app cassée, alors que la sortie (rescanner le QR) était à deux écrans.
+ * When the lock refuses a request, the in-game routes return `200` with NOTHING in
+ * it — so the app cannot tell “I am locked out” from “I have nothing”. A player
+ * whose token had disappeared saw an empty feed and thought the app was broken,
+ * when the way out (rescanning the QR code) was two screens away.
  *
- * On demande donc directement à topv.gg. Si le jeton n'est plus reconnu, on
- * l'efface et on rouvre le tuto : le joueur est ramené vers le QR au lieu
- * d'être laissé devant un écran muet.
+ * So we ask topv.gg directly. If the token is no longer recognised, we erase it and
+ * reopen the tutorial: the player is taken back to the QR code instead of being
+ * left in front of a mute screen.
  *
- * ⚠️ Le doute profite TOUJOURS au joueur : une panne réseau, un serveur qui ne
- * répond pas, une réponse illisible ne touchent à rien. On n'efface que sur un
- * « non » explicite du serveur. Effacer sur incertitude déconnecterait tout le
- * monde à la première coupure.
+ * ⚠️ Doubt ALWAYS benefits the player: a network failure, a server that does not
+ * answer, an unreadable response touch nothing. We only erase on an explicit “no”
+ * from the server. Erasing on uncertainty would disconnect everyone at the first
+ * outage.
  */
 export async function verifierAppareil(): Promise<void> {
   const deviceToken = getDeviceToken()
-  if (!deviceToken) return // rien à vérifier : le tuto s'occupe déjà de ce cas
+  if (!deviceToken) return // nothing to check: the tutorial already handles this case
   try {
     const r = await fetch(`${TOPV_WEB_BASE}/api/phone-link/device-check`, {
       method: 'POST',
@@ -96,24 +96,26 @@ export async function verifierAppareil(): Promise<void> {
 
     try {
       localStorage.removeItem(TOKEN_KEY)
-      // Le tuto ne se montre qu'une fois. Ici il doit revenir : c'est
-      // precisement le moment ou le joueur a besoin qu'on le guide.
+      // The tutorial only shows once. Here it has to come back: this is precisely
+      // the moment when the player needs guiding.
       localStorage.removeItem('topv:coach-secure-seen')
-    } catch { /* mode privé */ }
+    } catch { /* private mode */ }
     console.log('[topv] appareil non reconnu — retour au parcours QR')
 
-    // Les ecrans deja montes ont lu l'ancien etat : on repart proprement.
-    // ⚠️ Garde-fou dans `sessionStorage`, comme la veille de version : une
-    // variable mourrait au rechargement, et un serveur qui repondrait « non »
-    // en boucle rendrait le telephone inutilisable. Au plus UN rechargement.
+    // Screens already mounted have read the old state: we start again cleanly.
+    //
+    // ⚠️ Guard rail in `sessionStorage`, like the version watch: a variable would
+    // die on reload, and a server answering “no” in a loop would make the phone
+    // unusable. At most ONE reload.
     try {
       if (sessionStorage.getItem(CLE_RELANCE) !== '1') {
         sessionStorage.setItem(CLE_RELANCE, '1')
         location.reload()
       }
-    } catch { /* mode privé : pas de rechargement, le tuto reviendra a la prochaine ouverture */ }
+    } catch { /* private mode: no reload, the tutorial will come back on the next
+    } catch {    opening */ }
   } catch {
-    /* hors ligne : on ne touche a rien */
+/* offline: we touch nothing */
   }
 }
 

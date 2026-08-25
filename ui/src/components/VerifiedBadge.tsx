@@ -1,4 +1,4 @@
-/** Le badge « vérifié », aux couleurs de TopV (même dessin que sur le site). */
+/** The “verified” badge, in TopV's colours (same drawing as on the site). */
 export function VerifiedBadge({ size = 18 }: { size?: number }) {
     const id = `pvb-${size}`
     return (

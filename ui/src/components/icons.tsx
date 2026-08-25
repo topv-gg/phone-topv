@@ -113,7 +113,7 @@ export const MoreIcon = (p: IconProps) => (
     </Base>
 )
 
-// Les memes trois points, mais empiles. Le menu d'une fiche les veut verticaux.
+// The same three dots, but stacked. A profile's menu wants them vertical.
 export const MoreVerticalIcon = (p: IconProps) => (
     <Base {...p} filled>
         <circle cx="12" cy="5" r="1.4" stroke="none" />
@@ -165,8 +165,8 @@ export const SendIcon = (p: IconProps) => (
     </Base>
 )
 
-// Le son du direct. Des TRAITS, pas les emoji 🔊/🔇 : ils s'affichent en
-// couleur, chacun a sa taille, et ne suivent aucune charte.
+// The live's sound. STROKES, not the 🔊/🔇 emoji: those render in colour, each at its
+// own size, and follow no style guide.
 export const SoundOnIcon = (p: IconProps) => (
     <Base {...p}>
         <path d="M11 5 6 9H2v6h4l5 4V5Z" />

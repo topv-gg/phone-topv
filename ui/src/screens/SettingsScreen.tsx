@@ -4,12 +4,12 @@ import { getLocale } from '@/topv/i18n'
 import { choixTheme, definirChoixTheme, type ChoixTheme } from '@/topv/theme'
 
 /**
- * RÉGLAGES — pour l'instant : l'apparence.
+ * SETTINGS — for now: appearance.
  *
- * Le thème de l'app suivait le téléphone hôte, et cette synchronisation est peu
- * fiable (pas de mise à jour en direct, retour au sombre après coup). Plutôt que
- * de poursuivre la structure minifiée de chaque téléphone, on donne la main au
- * joueur. « Automatique » rend la main à l'hôte.
+ * The app's theme used to follow the host phone, and that synchronisation is
+ * unreliable (no live update, back to dark afterwards). Rather than chase each
+ * phone's minified structure, we hand control to the player. “Automatic” gives it
+ * back to the host.
  */
 export function SettingsScreen() {
   const nav = useNav()

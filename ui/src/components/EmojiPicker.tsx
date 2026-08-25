@@ -2,12 +2,12 @@ import { useEffect, useState, type RefObject } from 'react'
 import { EMOJI_GROUPS, RECENT_ICON } from '@/topv/emoji'
 
 /**
- * Clavier d'emoji du telephone, facon Instagram : un smiley dans la barre de
- * saisie ouvre un panneau juste au-dessus.
+ * The phone's emoji keyboard, Instagram style: a smiley in the input bar opens a
+ * panel just above it.
  *
- * L'appelant garde l'etat `open` : le panneau se pose en `absolute` au-dessus de
- * la barre et doit donc etre rendu par le parent de la barre, pas a cote du
- * bouton. Deux pieces, donc : `EmojiToggle` (le smiley) et `EmojiPanel`.
+ * The caller keeps the `open` state: the panel sits `absolute` above the bar, and
+ * must therefore be rendered by the bar's parent, not next to the button. Two
+ * pieces, then: `EmojiToggle` (the smiley) and `EmojiPanel`.
  */
 
 const RECENT_KEY = 'topv:emoji:recents'
@@ -28,11 +28,11 @@ function pushRecent(emoji: string) {
         const next = [emoji, ...loadRecents().filter((e) => e !== emoji)].slice(0, RECENT_MAX)
         localStorage.setItem(RECENT_KEY, JSON.stringify(next))
     } catch {
-        /* stockage indisponible : on s'en passe */
+/* storage unavailable: we do without */
     }
 }
 
-/** Insere un emoji la ou est le curseur, et laisse le curseur derriere lui. */
+/** Inserts an emoji where the cursor is, and leaves the cursor behind it. */
 export function insertAtCaret(
     ref: RefObject<HTMLInputElement | HTMLTextAreaElement | null>,
     value: string,
@@ -48,8 +48,8 @@ export function insertAtCaret(
     const end = el.selectionEnd ?? start
     setValue(value.slice(0, start) + emoji + value.slice(end))
     const caret = start + emoji.length
-    // Le champ n'a pas encore la nouvelle valeur : on replace le curseur au tour
-    // de boucle suivant, sinon il repart a la fin.
+    // The field does not carry the new value yet: we put the cursor back on the
+    // next loop turn, otherwise it jumps back to the end.
     requestAnimationFrame(() => {
         const node = ref.current
         if (!node) return
@@ -93,8 +93,8 @@ export function EmojiToggle({
 export function EmojiPanel({
     open,
     onPick,
-    // Les stories sont toujours sur fond noir : le panneau doit y rester sombre
-    // meme quand le telephone est en theme clair.
+    // Stories are always on a black background: the panel must stay dark there even
+    // when the phone is in light theme.
     dark = false,
 }: {
     open: boolean
@@ -132,8 +132,8 @@ export function EmojiPanel({
                     : 'border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-ink')
             }
         >
-            {/* Onglets : des pictogrammes, comme un vrai clavier d'emoji —
-                aucun mot a traduire dans onze langues. */}
+            {/* Tabs: pictograms, like a real emoji keyboard — no word to
+                translate into eleven languages. */}
             <div className="topv-thinbar flex gap-0.5 overflow-x-auto px-2 pb-1 pt-2">
                 {families.map((f) => (
                     <button

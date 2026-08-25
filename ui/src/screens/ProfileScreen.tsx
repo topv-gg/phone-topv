@@ -465,9 +465,10 @@ export function ProfileScreen({ username, characterId, characterName }: { userna
                             {!blocked && (
                                 <FollowButton
                                     username={profile.username}
-                                    // Le personnage reellement affiche : c'est LUI qu'on suit,
-                                    // pas le compte. Sans cette information le fil in-game ne
-                                    // saurait pas quels posts remonter.
+                                    // The character actually shown: it is THEM we
+                                    // follow, not the account. Without this
+                                    // information the in-game feed would not know
+                                    // which posts to bring up.
                                     characterId={shownCharacterId}
                                     isFollowing={profile.isFollowedByMe}
                                     onChanged={(isFollowing, followerCount) =>
@@ -650,9 +651,9 @@ export function ProfileScreen({ username, characterId, characterName }: { userna
                                 <PencilIcon className="h-3.5 w-3.5" />
                                 {t('profile.edit')}
                             </button>
-                            {/* Le menu ferme la barre, apres « Modifier ». Points
-                                VERTICAUX : `MoreIcon` (horizontal) reste celui des
-                                posts, le menu d'une fiche a son propre dessin. */}
+                            {/* The menu closes the bar, after “Edit”. VERTICAL
+                                dots: `MoreIcon` (horizontal) stays the posts'
+                                one, a profile's menu has its own drawing. */}
                             <button
                                 type="button"
                                 aria-label="settings"

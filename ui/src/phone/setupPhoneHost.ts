@@ -6,9 +6,9 @@ export type SubscribePhoneHostOptions = {
     onError?: (message: string) => void
 }
 
-// ⚠️ On ne pose plus la classe `dark` directement : tout passe par
-// `definirThemeHote`, qui laisse la priorite au choix du joueur (voir theme.ts).
-// Sans ca, chaque `app:opened` ecrasait son reglage.
+// ⚠️ We no longer set the `dark` class directly: everything goes through
+// `definirThemeHote`, which gives priority to the player's choice (see theme.ts).
+// Without that, every `app:opened` overwrote their setting.
 async function applyThemeFromApi(api: PhoneBridgeApi) {
     try {
         const theme = await api.getThemeMode()

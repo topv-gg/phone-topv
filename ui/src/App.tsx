@@ -270,7 +270,7 @@ function MainLayout() {
             </div>
             {!hideTabBar && <TabBar />}
 
-            {/* Tuto d'ouverture : « sécurise ton compte » (une fois, si non sécurisé). */}
+            {/* Opening tutorial: “secure your account” (once, if not secured). */}
             <CoachSecure />
 
             {/* Pushed screens. They used to cover the tab bar (inset-0); now they
@@ -293,8 +293,8 @@ function MainLayout() {
 function Gate() {
     const { status, errorCode, refresh, version } = useSession()
     useLocale()
-    // Une nouvelle interface publiee ? On se recharge, sans rien demander a
-    // personne. Voir veilleVersion.ts pour pourquoi c'est indispensable.
+    // A new interface published? We reload, without asking anyone. See
+    // veilleVersion.ts for why this is essential.
     useEffect(() => surveillerVersion(), [])
 
     if (status === 'loading') return <Splash />

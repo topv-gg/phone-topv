@@ -1,36 +1,34 @@
 import { UI_BUILD } from './api'
 
 /**
- * SE RECHARGER QUAND UNE NOUVELLE VERSION EST PUBLIEE.
+ * RELOAD WHEN A NEW VERSION IS PUBLISHED.
  *
- * ⚠️ Un cadre NUI deja charge ne se recharge JAMAIS tout seul : ni en fermant
- * le telephone, ni avec `restart phone-topv`, ni meme avec
- * `restart qs-smartphone` — mesure le 09/08, une interface antererieure a
- * 03:11 a survecu aux trois et a martele le serveur a 147 requetes/minute
- * pendant vingt minutes.
+ * ⚠️ A NUI frame that is already loaded NEVER reloads on its own: not by closing
+ * the phone, not with `restart phone-topv`, not even with `restart qs-smartphone` —
+ * measured on 09/08, an interface older than 03:11 survived all three and hammered
+ * the server at 147 requests a minute for twenty minutes.
  *
- * On compare donc notre version a celle qui est en ligne. Si elles different,
- * on recharge — UNE SEULE FOIS. Un rechargement en boucle (fichier absent,
- * version mal posee, reseau capricieux) serait pire que le probleme d'origine.
+ * So we compare our version with the one online. If they differ, we reload — ONCE
+ * ONLY. A reload loop (missing file, badly placed version, flaky network) would be
+ * worse than the original problem.
  */
 const INTERVALLE_MS = 60000
 const CLE_GARDE = 'topv-rechargement-fait'
 
 /**
- * ⚠️ LE GARDE-FOU EST DANS `sessionStorage`, PAS DANS UNE VARIABLE.
+ * ⚠️ THE GUARD RAIL IS IN `sessionStorage`, NOT IN A VARIABLE.
  *
- * Une variable meurt au rechargement. Si `version.txt` et la version compilee
- * divergeaient — un oubli suffit — chaque chargement relancerait un
- * rechargement : le telephone deviendrait inutilisable. `sessionStorage`
- * survit au rechargement, donc au plus UN par session.
+ * A variable dies on reload. If `version.txt` and the compiled version diverged —
+ * one oversight is enough — every load would trigger another reload: the phone
+ * would become unusable. `sessionStorage` survives the reload, so at most ONE per
+ * session.
  */
 /**
- * Le garde-fou retient VERS QUELLE VERSION on s'est deja recharge, pas un
- * simple « c'est fait ». Un drapeau global n'autorisait qu'UN seul passage par
- * session : la deuxieme publication d'une soiree n'arrivait jamais au joueur,
- * qui devait se reconnecter au jeu. En retenant la version cible, chaque
- * nouvelle publication est prise — et on ne peut toujours pas boucler, puisque
- * se recharger deux fois vers la MEME version reste refuse.
+ * The guard rail remembers WHICH VERSION we have already reloaded to, not a plain
+ * “done”. A global flag allowed only ONE pass per session: the second publication
+ * of an evening never reached the player, who had to reconnect to the game. By
+ * remembering the target version, every new publication is picked up — and we still
+ * cannot loop, since reloading twice to the SAME version stays refused.
  */
 function dejaFait(cible: string): boolean {
     try {
@@ -44,7 +42,7 @@ function marquerFait(cible: string) {
     try {
         sessionStorage.setItem(CLE_GARDE, cible)
     } catch {
-        /* mode prive : on s'en passe */
+/* private mode: we do without */
     }
 }
 
@@ -62,8 +60,8 @@ async function versionEnLigne(): Promise<string | null> {
 export function surveillerVersion() {
     const verifier = async () => {
         const enLigne = await versionEnLigne()
-        // Pas de reponse : on ne touche a rien. Une coupure reseau ne doit pas
-        // recharger le telephone d'un joueur en pleine scene.
+        // No answer: we touch nothing. A network outage must not reload a player's
+        // phone in the middle of a scene.
         if (!enLigne || enLigne === UI_BUILD) return
         if (dejaFait(enLigne)) return
         marquerFait(enLigne)

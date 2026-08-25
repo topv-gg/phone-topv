@@ -48,19 +48,19 @@ export function FollowsScreen({ username, kind, characterName }: { username: str
         setError(null)
         const incoming = res.data.accounts ?? []
         setAccounts((prev) => {
-            // La cle d'une ligne, c'est le PERSONNAGE affiche — jamais le compte.
+            // The key to a row is the CHARACTER shown — never the account.
             //
-            // ⚠️ Deux defauts tenaient dans les trois lignes precedentes.
+            // ⚠️ Two defects fitted into the three preceding lines.
             //
-            // 1. On dedoublonnait sur `username`, le pseudo du COMPTE. Or cette
-            //    liste montre des PERSONNAGES, et un meme roliste en a souvent
-            //    plusieurs : au « voir plus », la page suivante se faisait donc
-            //    filtrer presque entierement, et le bouton semblait mort.
+            // 1. We deduplicated on `username`, the ACCOUNT's handle. But this list
+            // shows CHARACTERS, and a single roleplayer often has several: on “see
+            // more”, the next page was therefore filtered out almost entirely, and
+            // the button looked dead.
             //
-            // 2. La premiere page n'etait dedoublonnee par RIEN (`return
-            //    incoming`). Suivre quelqu'un depuis son compte PUIS depuis un
-            //    personnage cree deux lignes vers la meme cible — c'est ce qui
-            //    affichait « Fer Fer » deux fois de suite, releve le 07/08.
+            // 2. The first page was deduplicated by NOTHING (`return incoming`).
+            // Following someone from their account AND THEN from a character
+            // creates two rows towards the same target — that is what showed “Fer
+            // Fer” twice in a row, noted on 07/08.
             const cle = (a: AccountRow) => a.activeCharacter?.id ?? `@${a.username}`
             const base = fromCursor ? prev : []
             const vus = new Set(base.map(cle))

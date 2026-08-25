@@ -175,8 +175,8 @@ function ReelItem({
                         )}
                     </span>
                 </button>
-                {/* La legende d'un reel s'ecrit dans NOS composeurs : elle peut donc
-                    porter une mention. Rendue brute, on en voyait la syntaxe. */}
+                {/* A reel's caption is written in OUR composers: it can therefore
+                    carry a mention. Rendered raw, its syntax showed. */}
                 {reel.caption && (
                     <RichText
                         text={reel.caption}

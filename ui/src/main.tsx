@@ -6,13 +6,13 @@ import { appliquerTheme } from '@/topv/theme'
 import { verifierAppareil } from '@/topv/link'
 import './index.css'
 
-// Le choix du joueur est pose AVANT le premier rendu : sinon l'app s'affiche une
-// fraction de seconde dans le theme de l'hote avant de basculer.
+// The player's choice is set BEFORE the first render: otherwise the app shows for a
+// fraction of a second in the host's theme before switching.
 appliquerTheme()
 
-// Un jeton perime ne doit plus se traduire par un fil vide inexplicable. On ne
-// bloque pas le rendu : la verification suit son cours et ne fait quelque chose
-// que si le serveur repond explicitement « je ne connais pas cet appareil ».
+// An expired token must no longer show up as an unexplained empty feed. We do not
+// block rendering: the check runs its course and only does something if the server
+// explicitly answers “I do not know this device”.
 void verifierAppareil()
 
 createRoot(document.getElementById('root')!).render(

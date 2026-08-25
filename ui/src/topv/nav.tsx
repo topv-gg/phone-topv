@@ -34,9 +34,9 @@ export type Route =
     // TopV Live — watch a stream / be the streamer.
     | { name: 'live'; liveId: string; live?: Live }
     | { name: 'liveBroadcast' }
-    // Sécuriser son compte : lier ce téléphone en jeu à son compte (QR).
+    // Securing your account: linking this in-game phone to your account (QR code).
     | { name: 'secureAccount' }
-    // Réglages de l'app (apparence clair/sombre).
+    // App settings (light/dark appearance).
     | { name: 'settings' }
 
 type NavContextValue = {

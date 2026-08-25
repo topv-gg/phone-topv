@@ -16,9 +16,9 @@ import { EmojiPanel, EmojiToggle, insertAtCaret } from '@/components/EmojiPicker
 const MAX_LEN = 1000
 const MAX_IMAGES = 4
 
-// Decoupe le texte en morceaux, en orange sur les noms des personnages
-// mentionnes. On se fie a la liste des mentions CHOISIES : c'est la seule
-// verite (le texte, lui, ne porte aucune balise — voir `acceptMention`).
+// Cuts the text into pieces, in orange on the names of the characters mentioned. We
+// rely on the list of CHOSEN mentions: it is the only truth (the text itself
+// carries no markup — see `acceptMention`).
 function highlightMentions(
     text: string,
     picked: Array<{ characterId: string; name: string; username: string }>,
@@ -335,10 +335,10 @@ export function ComposeScreen({
                         lbPhone ? 'flex-1' : 'min-h-full',
                     )}
                 >
-                    {/* Calque de couleur : il reproduit le texte a l'identique
-                        et met les mentions en orange. Le textarea au-dessus
-                        garde son curseur mais son texte est transparent — c'est
-                        le seul moyen de colorer une partie d'un champ de saisie. */}
+                    {/* Colour layer: it reproduces the text identically and puts
+                        the mentions in orange. The textarea above keeps its
+                        cursor but its text is transparent — that is the only way
+                        to colour part of an input field. */}
                     <div className="relative w-full flex-1">
                         <div
                             aria-hidden

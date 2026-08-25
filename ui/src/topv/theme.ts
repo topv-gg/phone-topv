@@ -1,19 +1,18 @@
 /**
- * CLAIR / SOMBRE — le choix du joueur passe AVANT celui du téléphone.
+ * LIGHT / DARK — the player's choice comes BEFORE the phone's.
  *
- * Par défaut l'app suit le thème du téléphone hôte (lb-phone, qs-smartphone).
- * Mais cette synchronisation est peu fiable : elle n'arrive pas toujours en
- * direct, et le thème retombe en sombre après coup. Chasser la structure
- * minifiée de chaque téléphone est un puits sans fond — on donne donc la main
- * au joueur, dans l'app.
+ * By default the app follows the host phone's theme (lb-phone, qs-smartphone). But
+ * that synchronisation is unreliable: it does not always arrive live, and the theme
+ * falls back to dark afterwards. Chasing each phone's minified structure is a
+ * bottomless pit, so we hand control to the player, inside the app.
  *
- * `topv:theme-override` :
- *   'light' | 'dark' → le joueur a tranché, l'hôte est ignoré.
- *   absent           → on suit l'hôte (comportement d'origine).
+ * `topv:theme-override`: 'light' or 'dark' means the player has decided and the
+ * host is ignored; absent means we follow the host, which is the original
+ * behaviour.
  *
- * Le thème de l'hôte est mémorisé même quand un choix est actif : si le joueur
- * revient sur « Automatique », on applique la dernière valeur connue sans
- * devoir redemander quoi que ce soit.
+ * The host's theme is remembered even while a choice is active: if the player goes
+ * back to “Automatic”, we apply the last known value without having to ask for
+ * anything again.
  */
 const CLE = 'topv:theme-override'
 
@@ -26,31 +25,32 @@ export function choixTheme(): ChoixTheme {
         const v = localStorage.getItem(CLE)
         return v === 'light' || v === 'dark' ? v : null
     } catch {
-        return null // mode privé : on suit l'hôte, sans jamais casser
+        return null // private mode: we follow the host, without ever breaking
     }
 }
 
-/** Pose la classe `dark` sur <html> selon le choix, sinon selon l'hôte. */
+/** Sets the `dark` class on <html> according to the choice, otherwise according to
+   the host. */
 export function appliquerTheme() {
     const c = choixTheme()
     const sombre = c ? c === 'dark' : themeHote === 'dark'
     document.documentElement.classList.toggle('dark', sombre)
 }
 
-/** Le joueur tranche. `null` = revenir au thème du téléphone. */
+/** The player decides. `null` = go back to the phone's theme. */
 export function definirChoixTheme(c: ChoixTheme) {
     try {
         if (c) localStorage.setItem(CLE, c)
         else localStorage.removeItem(CLE)
     } catch {
-        /* mode privé : le choix ne survivra pas, mais il s'applique tout de suite */
+/* private mode: the choice will not survive, but it applies straight away */
     }
     appliquerTheme()
 }
 
 /**
- * Le téléphone hôte annonce son thème. On le retient toujours, mais il ne
- * l'emporte que si le joueur n'a rien choisi.
+ * The host phone announces its theme. We always remember it, but it only wins if
+ * the player has chosen nothing.
  */
 export function definirThemeHote(sombre: boolean) {
     themeHote = sombre ? 'dark' : 'light'

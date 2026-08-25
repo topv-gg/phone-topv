@@ -123,10 +123,10 @@ export function LiveViewerScreen({ liveId, seed }: { liveId: string; seed?: Live
 
             <FloatingHearts pulse={pulse} />
 
-            {/* EN-TETE. Qui filme, tenu dans UNE pastille sombre plutot que
-                pose a plat sur l'image : sur une scene claire, du texte blanc
-                a meme la video devient illisible. Le degrade seul n'y suffit
-                pas — il s'eclaircit avec l'image. */}
+            {/* HEADER. Who is filming, held in ONE dark pill rather than laid
+                flat on the image: on a bright scene, white text straight on the
+                video becomes unreadable. The gradient alone is not enough — it
+                lightens along with the image. */}
             <div className="relative z-10 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent px-3 pb-6 pt-3">
                 <button
                     type="button"
@@ -141,7 +141,7 @@ export function LiveViewerScreen({ liveId, seed }: { liveId: string; seed?: Live
                         {meta?.characterName ?? ''}
                     </span>
                 </button>
-                {/* La flamme TopV, pas un rouge quelconque. */}
+                {/* The TopV flame, not just any red. */}
                 <span
                     className="rounded-full px-2 py-[3px] text-[10px] font-extrabold uppercase tracking-wider text-white"
                     style={{ background: 'linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #f97316 100%)' }}
@@ -152,8 +152,8 @@ export function LiveViewerScreen({ liveId, seed }: { liveId: string; seed?: Live
                     <EyeIcon className="h-3.5 w-3.5" />
                     {viewerCount}
                 </span>
-                {/* Le son (la voix de celui qui filme) — visible seulement si
-                    le direct en porte un. Coupe par defaut, un appui l'allume. */}
+                {/* The sound (the voice of whoever is filming) — visible only if
+                    the live carries one. Muted by default, a press turns it on. */}
                 {audioSeq > 0 && !ended && (
                     <button
                         type="button"
@@ -199,10 +199,10 @@ export function LiveViewerScreen({ liveId, seed }: { liveId: string; seed?: Live
 
             {/* The chat, over the bottom of the frame */}
             <div className="relative z-10 mt-auto flex flex-col justify-end">
-                {/* LES COMMENTAIRES. Chacun dans sa propre bulle sombre : sur
-                    une image claire, du texte blanc pose a nu disparait. Le
-                    nom porte la couleur du personnage — c'est ce qui permet de
-                    suivre qui parle quand ca defile vite. */}
+                {/* THE COMMENTS. Each in its own dark bubble: on a bright image,
+                    white text laid bare disappears. The name carries the
+                    character's colour — that is what lets you follow who is
+                    speaking when it scrolls fast. */}
                 <div
                     ref={chatBoxRef}
                     className="max-h-44 space-y-1 overflow-y-auto px-3 pb-2 topv-noscrollbar"
@@ -221,9 +221,11 @@ export function LiveViewerScreen({ liveId, seed }: { liveId: string; seed?: Live
                                 >
                                     {m.characterName ?? '?'}
                                 </span>
-                                {/* Le commentaire etait rendu brut : une mention y montrait sa
-                                    syntaxe. `inline` parce que ce texte suit le nom sur la meme
-                                    ligne — RichText produit un <p>, qui casserait la bulle en deux. */}
+                                {/* The comment was rendered raw: a mention showed
+                                    its syntax there. `inline` because this text
+                                    follows the name on the same line — RichText
+                                    produces a <p>, which would break the bubble
+                                    in two. */}
                                 <RichText
                                     text={m.text}
                                     allowUsernameFallback

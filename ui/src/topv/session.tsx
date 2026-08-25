@@ -5,9 +5,9 @@ import type { CharacterProfile, SessionInfo } from './types'
 
 export type SessionStatus = 'loading' | 'ready' | 'error'
 
-// La ressource installee sait-elle relayer cette fonctionnalite ? Une ressource
-// anterieure a juillet 2026 ne renvoie aucune liste : on repond non, et
-// l'interface masque le bouton au lieu d'echouer au clic.
+// Does the installed resource know how to relay this feature? A resource older than
+// July 2026 returns no list at all: we answer no, and the interface hides the
+// button instead of failing on click.
 export function hasFeature(session: SessionInfo | null, name: string): boolean {
     return Array.isArray(session?.features) && session!.features!.includes(name)
 }
