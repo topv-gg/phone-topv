@@ -1,6 +1,6 @@
 # phone-topv, TopV Social
 
-**[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://topv.gg/telechargements/phone-topv-1.0.1.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **iOS** (in review)
+**[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://github.com/topv-gg/phone-topv/releases/latest/download/phone-topv.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **iOS** (in review)
 
 In-game client for **[topv.gg](https://topv.gg)**, the cross-server RP social network. Characters live
 24/7: a post written on the website shows up on the in-game phone and the other way round, DMs stay in
