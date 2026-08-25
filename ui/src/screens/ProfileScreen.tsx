@@ -113,10 +113,10 @@ export function ProfileScreen({ username, characterId, characterName }: { userna
     // Pinned character if the caller gave one, otherwise the one the API decided
     // to display (known only once the profile has loaded).
     //
-    // `characterName`: profile shares in DM (`@[Fer Fer](account)`) carry only
-    // the character's NAME, not its id — without this resolution, the tap opened
-    // the account pinned to its currently-ACTIVE character (ImNotQuasar) instead
-    // of the shared character (Fer Fer).
+    // `characterName`: profile shares in DM (`@[Name](account)`) carry only the
+    // character's NAME, not its id — without this resolution, the tap opened the
+    // account pinned to its currently-ACTIVE character instead of the shared
+    // one.
     const namedCharacterId =
         !characterId && characterName && profile?.characters
             ? profile.characters.find(
@@ -158,7 +158,7 @@ export function ProfileScreen({ username, characterId, characterName }: { userna
         let res = await getProfile(username, characterId)
         if (myToken !== loadTokenRef.current) return
         // Profile share in DM: we only have the shared character's NAME
-        // (`@[Fer Fer](account)`). If it's not the active character returned,
+        // (`@[Name](account)`). If it's not the active character returned,
         // we re-request the profile PINNED to it — otherwise the tap opened the
         // currently-active character instead of the shared one.
         if (!characterId && characterName && res.ok && res.data) {

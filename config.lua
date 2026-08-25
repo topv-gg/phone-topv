@@ -50,8 +50,8 @@ Config.Discord = {
     webhook   = '',
     -- What the bot is called and shows in Discord.
     botName   = 'TopV Social',
-    -- 🔴 CELUI DE 256 PX PARAISSAIT FLOU : Discord l'agrandit dans la fiche
-    -- du bot. Le 1024 existait deja a cote sur le site.
+    -- 1024 px, square, no transparency: Discord crops it to a circle and
+    -- enlarges it in the bot's profile card.
     botAvatar = 'https://topv.gg/feed-logos/topv-discord-avatar.png',
     -- The line above the message. Translate it to your community's language.
     title     = 'New post',

@@ -12,7 +12,7 @@ import { CenterSpinner } from '@/components/ui'
 // time). The same picker as message forwarding.
 //
 // ⚠️ IT ONLY REACHED THREADS ALREADY OPEN — and not even all of them. Two gaps,
-// filled on 05/08/2026:
+// had to be filled:
 //
 // · no SEARCH: impossible to send to a character you had never written to. For a
 // new player the sheet was empty, so sharing simply did not exist;

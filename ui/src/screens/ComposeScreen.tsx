@@ -332,8 +332,8 @@ export function ComposeScreen({
                     // The gate came from a sound rule — one bundle serves both
                     // phones, so a tweak made for one silently changes the
                     // other — but it assumed Quasar's rendering was RIGHT. It
-                    // was not: same defect, both phones. Damien hit it on
-                    // Quasar on 25/08, three weeks after lb-phone was fixed.
+                    // was not: same defect, both phones, and it went
+                    // unnoticed for weeks after lb-phone was fixed.
                     // A safeguard whose reason has gone is a bug.
                     //
                     // ⚠️ With no attachment nothing changes: `flex-1` takes the

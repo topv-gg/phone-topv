@@ -107,14 +107,14 @@ function harvestAvatars(value: unknown): void {
  * THE VERSION OF THIS INTERFACE, sent on every call.
  *
  * ⚠️ Without it, there is no way to know which version is running on a player's
- * machine: on 09/08, the server traces said “old interface” while the logs said
- * “new index.html loaded”. An old frame stays alive after a re-registration, and it
+ * machine: server traces once said “old interface” while the logs said “new
+ * index.html loaded”. An old frame stays alive after a re-registration, and it
  * was THAT one calling.
  *
  * To be changed on every publication. It is a string, not a computed date: it has
  * to be frozen into the build.
  */
-export const UI_BUILD = '2026-08-25-a'
+export const UI_BUILD = '2026-08-25-b'
 
 async function call<T>(action: string, payload?: Record<string, unknown>): Promise<ApiResult<T>> {
     try {

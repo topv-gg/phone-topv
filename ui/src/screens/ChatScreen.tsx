@@ -338,7 +338,7 @@ export function ChatScreen({
         recRef.current = null
         setRecording(false)
         if (rec && !sendIt) rec.ondataavailable = null
-        try { rec?.stop() } catch { /* deja arrete */ }
+        try { rec?.stop() } catch { /* already stopped */ }
         micStreamRef.current?.getTracks().forEach((t) => t.stop())
         micStreamRef.current = null
     }
@@ -356,14 +356,14 @@ export function ChatScreen({
         } catch (e) {
             // By FAR the most frequent cause in game: lb-phone loads TopV in an
             // iframe from another domain without `allow="microphone"`, and Chromium
-            // then refuses the microphone. See REMETTRE-MICRO-LBPHONE.ps1.
+            // then refuses the microphone. See FIX-LBPHONE-MIC.ps1.
             const nom = (e as { name?: string } | null)?.name ?? ''
             setMicErreur(
                 nom === 'NotAllowedError'
-                    ? "Micro refuse par le telephone. Lancer REMETTRE-MICRO-LBPHONE.ps1 puis 'restart lb-phone'."
+                    ? "Microphone denied by the phone. Run FIX-LBPHONE-MIC.ps1, then 'restart lb-phone'."
                     : nom === 'NotFoundError'
-                      ? 'Aucun micro detecte.'
-                      : `Micro indisponible (${nom || 'erreur inconnue'}).`,
+                      ? 'No microphone found.'
+                      : `Microphone unavailable (${nom || 'unknown error'}).`,
             )
             return
         }

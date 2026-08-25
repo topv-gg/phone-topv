@@ -1082,24 +1082,21 @@ actions['feed.get'] = function(_, sess, p)
     }
 end
 
--- Un pseudo part dans une adresse : il peut contenir autre chose que des
--- lettres — il existe en base un `timo<coeur>7632`. Sans cet encodage, le lien
--- casse exactement la.
+-- A handle goes into a URL, and it may hold more than letters: emoji and
+-- punctuation both occur. Without this encoding the link breaks on those.
 local function encoderPourAdresse(texte)
     return (texte:gsub('[^%w%-%._~]', function(c)
         return string.format('%%%02X', string.byte(c))
     end))
 end
 
--- ⭐ LES MENTIONS SONT DEJA DES LIENS, MAIS DANS UNE AUTRE LANGUE.
--- Le texte d'une publication porte `@[Ippo Lopez](ippojin)` : un nom lisible et
--- le pseudo qui permet de retrouver la personne. Discord, lui, ecrit
--- `[texte](adresse)`. Les deux formes se ressemblent au point qu'on croirait
--- n'avoir rien a faire ; il manque seulement l'adresse.
+-- Mentions are already links, only in another notation. A post's text holds
+-- `@[Display Name](handle)`: a readable name and the handle that finds the
+-- person. Discord writes its links as `[text](url)`. The two shapes look so
+-- alike that one could think there is nothing to do; only the URL is missing.
 --
--- ⚠️ ON NE TOUCHE QU'A CETTE FORME. Convertir un `@quelquechose` ecrit a la main
--- viserait n'importe quel mot commencant par une arobase, y compris une adresse
--- de courriel.
+-- ⚠️ ONLY THIS SHAPE IS TOUCHED. Converting a hand-typed `@something` would
+-- catch any word starting with an at sign, email addresses included.
 local function mentionsEnLiens(texte)
     if type(texte) ~= 'string' then return texte end
     return (texte:gsub('@%[([^%]]+)%]%(([^%)]+)%)', function(nom, pseudo)
@@ -1140,7 +1137,7 @@ local function relayPostToDiscord(data)
     }
 
     if type(data.text) == 'string' and data.text ~= '' then
-        -- Les mentions deviennent des liens cliquables vers la fiche.
+        -- Mentions become links through to the profile.
         embed.description = mentionsEnLiens(data.text)
     end
 
@@ -2145,9 +2142,9 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
 
     rateStamp(src, action)
 
-    -- ⭐ LA PUBLICATION EST CONFIRMEE ICI, et `data` porte tout ce qu'il faut :
-    -- texte, images, nom du personnage, sa photo, la date. C'est le seul endroit
-    -- ou l'on peut annoncer dans Discord une publication qui existe vraiment.
+    -- The post is CONFIRMED at this point, and `data` carries everything the
+    -- relay needs: text, images, character name and photo, timestamp. This is
+    -- the only place where we can announce a post that really exists.
     if action == 'post.create' and data then
         relayPostToDiscord(data)
     end
