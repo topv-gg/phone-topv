@@ -1082,6 +1082,87 @@ actions['feed.get'] = function(_, sess, p)
     }
 end
 
+-- Un pseudo part dans une adresse : il peut contenir autre chose que des
+-- lettres — il existe en base un `timo<coeur>7632`. Sans cet encodage, le lien
+-- casse exactement la.
+local function encoderPourAdresse(texte)
+    return (texte:gsub('[^%w%-%._~]', function(c)
+        return string.format('%%%02X', string.byte(c))
+    end))
+end
+
+-- ⭐ LES MENTIONS SONT DEJA DES LIENS, MAIS DANS UNE AUTRE LANGUE.
+-- Le texte d'une publication porte `@[Ippo Lopez](ippojin)` : un nom lisible et
+-- le pseudo qui permet de retrouver la personne. Discord, lui, ecrit
+-- `[texte](adresse)`. Les deux formes se ressemblent au point qu'on croirait
+-- n'avoir rien a faire ; il manque seulement l'adresse.
+--
+-- ⚠️ ON NE TOUCHE QU'A CETTE FORME. Convertir un `@quelquechose` ecrit a la main
+-- viserait n'importe quel mot commencant par une arobase, y compris une adresse
+-- de courriel.
+local function mentionsEnLiens(texte)
+    if type(texte) ~= 'string' then return texte end
+    return (texte:gsub('@%[([^%]]+)%]%(([^%)]+)%)', function(nom, pseudo)
+        return '[@' .. nom .. '](https://topv.gg/fr/rolistes/' .. encoderPourAdresse(pseudo) .. ')'
+    end))
+end
+
+-- ─── THE DISCORD RELAY ───
+--
+-- ⭐ CALLED ONLY ONCE THE POST IS CONFIRMED. The dispatcher waits for topv.gg
+-- before handing control back: at that exact point we know the post EXISTS and
+-- we hold its full answer. Sending any earlier would announce posts in Discord
+-- that were never created.
+--
+-- ⚠️ WE SHOW THE CHARACTER, NEVER THE PLAYER. The in-game phone is strictly
+-- in-character; the answer carries both, and picking the wrong one would give
+-- away who plays whom.
+--
+-- ⚠️ WE DO NOT WAIT FOR DISCORD. No callback: a slow or unreachable channel must
+-- never delay a player whose post is already published.
+local function relayPostToDiscord(data)
+    local cfg = Config.Discord
+    if not cfg or type(cfg.webhook) ~= 'string' or cfg.webhook == '' then return end
+    if type(data) ~= 'table' then return end
+
+    local embed = {
+        color  = cfg.color or 0xFF3B24,
+        title  = cfg.title or 'New post',
+        author = {
+            name     = data.characterName or 'TopV',
+            icon_url = data.characterAvatarUrl or nil,
+        },
+        footer = {
+            text     = cfg.botName or 'TopV Social',
+            icon_url = cfg.botAvatar or nil,
+        },
+        timestamp = data.createdAt or nil,
+    }
+
+    if type(data.text) == 'string' and data.text ~= '' then
+        -- Les mentions deviennent des liens cliquables vers la fiche.
+        embed.description = mentionsEnLiens(data.text)
+    end
+
+    -- The first picture, shown large. A post can carry several; Discord shows
+    -- one per embed, and a wall of embeds for one post reads worse than one.
+    if type(data.imageUrls) == 'table' and data.imageUrls[1] then
+        embed.image = { url = data.imageUrls[1] }
+    end
+
+    -- ⚠️ THIS ADDRESS CARRIES THE PLAYER'S HANDLE, not only the character's.
+    -- `linkToPost = false` is there for communities that must never see it.
+    if cfg.linkToPost ~= false and data.id and data.author and data.author.username then
+        embed.url = 'https://topv.gg/fr/rolistes/' .. data.author.username .. '/p/' .. data.id
+    end
+
+    PerformHttpRequest(cfg.webhook, function() end, 'POST', json.encode({
+        username   = cfg.botName or 'TopV Social',
+        avatar_url = cfg.botAvatar or nil,
+        embeds     = { embed },
+    }), { ['Content-Type'] = 'application/json' })
+end
+
 actions['post.create'] = function(_, sess, p)
     local text = cleanText(p.text, Config.Limits.postTextMax)
     local imageUrls = cleanImageUrls(p.imageUrls)
@@ -2063,6 +2144,13 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
     end
 
     rateStamp(src, action)
+
+    -- ⭐ LA PUBLICATION EST CONFIRMEE ICI, et `data` porte tout ce qu'il faut :
+    -- texte, images, nom du personnage, sa photo, la date. C'est le seul endroit
+    -- ou l'on peut annoncer dans Discord une publication qui existe vraiment.
+    if action == 'post.create' and data then
+        relayPostToDiscord(data)
+    end
 
     if action == 'notifications.counts' and data then
         pushState[src] = {

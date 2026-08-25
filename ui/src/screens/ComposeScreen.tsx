@@ -6,7 +6,6 @@ import { t } from '@/topv/i18n'
 import { useNav } from '@/topv/nav'
 import { phoneToast, toastError } from '@/topv/toast'
 import { getPhoneBridgeApi } from '@/utils/phoneBridge'
-import { useIsLbPhone } from '@/utils/useIsLbPhone'
 import type { AccountRow, Post } from '@/topv/types'
 import { Avatar } from '@/components/Avatar'
 import { CameraIcon, CloseIcon, ImageIcon } from '@/components/icons'
@@ -64,7 +63,6 @@ export function ComposeScreen({
     prefillMention?: { characterId: string; name: string; username: string }
 }) {
     // Gates the lb-phone-only layout below; Quasar keeps its own.
-    const lbPhone = useIsLbPhone()
     const nav = useNav()
     const [text, setText] = useState(prefillMention ? `@${prefillMention.name} ` : '')
     const [images, setImages] = useState<string[]>([])
@@ -323,17 +321,25 @@ export function ComposeScreen({
 
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto topv-noscrollbar">
                 <div
-                    className={classNames(
-                        'flex flex-col px-4 pt-3',
-                        // `min-h-full` makes this block fill the WHOLE scroll
-                        // viewport on its own, so the attachment previews below
-                        // (image / GIF / video / hashtags) get pushed under the
-                        // fold and look like they were never added. `flex-1`
-                        // gives the text the space that REMAINS, keeping the
-                        // previews visible. lb-phone only — Quasar keeps
-                        // `min-h-full` exactly as before.
-                        lbPhone ? 'flex-1' : 'min-h-full',
-                    )}
+                    // `min-h-full` made this block fill the WHOLE scroll
+                    // viewport on its own, so the attachment previews below
+                    // (image / GIF / video / hashtags) were pushed under the
+                    // fold and looked like they had never been added. `flex-1`
+                    // gives the text the space that REMAINS, keeping the
+                    // previews visible.
+                    //
+                    // 🔴 THIS WAS GATED TO lb-phone, AND QUASAR KEPT THE BUG.
+                    // The gate came from a sound rule — one bundle serves both
+                    // phones, so a tweak made for one silently changes the
+                    // other — but it assumed Quasar's rendering was RIGHT. It
+                    // was not: same defect, both phones. Damien hit it on
+                    // Quasar on 25/08, three weeks after lb-phone was fixed.
+                    // A safeguard whose reason has gone is a bug.
+                    //
+                    // ⚠️ With no attachment nothing changes: `flex-1` takes the
+                    // space that remains, and when nothing sits below, that
+                    // space is the whole screen.
+                    className="flex flex-col px-4 pt-3 flex-1"
                 >
                     {/* Colour layer: it reproduces the text identically and puts
                         the mentions in orange. The textarea above keeps its

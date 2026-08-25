@@ -28,11 +28,41 @@ Config.App = {
     appStoreOnly = true, -- true = shown in the store with its listing (description + images), downloadable. Default pre-installation is handled by Quasar/lb-phone themselves (integration), not by this flag.
     price        = 0,
     sizeMb       = 2,
-    version      = '1.0.1',
+    version      = '1.0.2',
     whatsNew     = 'Your RP social network, in-game. Feed, DMs, stories, live and character profiles, 100%% in-character, synced with topv.gg.',
 }
 
 -- Session bootstrap + keep-alive (ms).
+-- ─── DISCORD ───
+-- Relay every post published from this server into a Discord channel.
+--
+-- Paste a channel webhook here (Discord: Channel → Edit → Integrations →
+-- Webhooks → New Webhook → Copy URL) and every post your players publish from
+-- the in-game phone shows up there, with its picture.
+--
+-- Leave it empty and nothing is sent: this is off by default.
+--
+-- ⚠️ The post is ALREADY published when we send: a slow or unreachable channel
+-- never delays a player. If Discord refuses, the post stays, only the relay is
+-- lost.
+Config.Discord = {
+    -- The channel webhook. Empty = the relay is off.
+    webhook   = '',
+    -- What the bot is called and shows in Discord.
+    botName   = 'TopV Social',
+    -- 🔴 CELUI DE 256 PX PARAISSAIT FLOU : Discord l'agrandit dans la fiche
+    -- du bot. Le 1024 existait deja a cote sur le site.
+    botAvatar = 'https://topv.gg/feed-logos/topv-discord-avatar.png',
+    -- The line above the message. Translate it to your community's language.
+    title     = 'New post',
+    -- The colour of the bar on the left of the message. TopV flame red.
+    color     = 0xFF3B24,
+    -- Make the message clickable through to the post on topv.gg.
+    -- ⚠️ That address contains the PLAYER's handle, not only the character's.
+    -- Set to false if your community must never see who plays whom.
+    linkToPost = true,
+}
+
 Config.Session = {
     startDelayMs       = 4000,
     standaloneFallback = true,
