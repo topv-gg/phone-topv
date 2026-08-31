@@ -7,7 +7,7 @@ lua54 'yes'
 name 'phone-topv'
 author 'TopV.gg'
 description 'TopV Social, the in-character RP social network, inside the phone'
-version '1.0.2'
+version '1.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',

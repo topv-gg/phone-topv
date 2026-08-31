@@ -25,11 +25,11 @@ Config.App = {
     -- there. Quasar keeps `description` exactly as it is.
     descriptionLb = 'The in-character social network that connects every server: post, react and message, 24/7.',
     age          = '18+',
-    appStoreOnly = true, -- true = shown in the store with its listing (description + images), downloadable. Default pre-installation is handled by Quasar/lb-phone themselves (integration), not by this flag.
+    appStoreOnly = false, -- false = the app sits on the phone home screen from the start. true = it only exists in the App Store, and each player has to find and install it there.
     price        = 0,
     sizeMb       = 2,
-    version      = '1.0.2',
-    whatsNew     = 'Your RP social network, in-game. Feed, DMs, stories, live and character profiles, 100%% in-character, synced with topv.gg.',
+    version      = '1.1.0',
+    whatsNew     = 'Now on your home screen from the start, with no download needed. Posts can also be relayed to a Discord channel of your choice.',
 }
 
 -- Session bootstrap + keep-alive (ms).
@@ -47,6 +47,11 @@ Config.App = {
 -- lost.
 Config.Discord = {
     -- The channel webhook. Empty = the relay is off.
+    --
+    -- RECOMMENDED: leave this empty and set it in server.cfg instead:
+    --     set topv_discord_webhook "https://discord.com/api/webhooks/..."
+    -- A webhook is a credential. Written here, it travels with the resource
+    -- whenever the folder is copied, zipped or shared. server.cfg stays home.
     webhook   = '',
     -- What the bot is called and shows in Discord.
     botName   = 'TopV Social',

@@ -92,7 +92,8 @@ Defaults are sane, most servers change nothing. The settings that are actually w
 | Key | Default | What it does |
 |---|---|---|
 | `Config.UI.source` | `hosted` | `hosted`: interface served by topv.gg, so fixes reach you on their own and the CDN carries the download. `resource`: use the local `ui/build` copy instead |
-| `Config.App.appStoreOnly` | `true` | Show the app in the phone's store with its listing rather than pre-installing it |
+| `Config.App.appStoreOnly` | `false` | `false` puts the app on the phone home screen from the start. `true` lists it in the phone's App Store instead, and each player has to find and install it there |
+| `topv_discord_webhook` *(server.cfg)* | *(empty)* | Relay every in-game post to a Discord channel. A webhook is a credential: set it in `server.cfg`, not in `config.lua`, so it never travels with the resource |
 | `Config.Push.enabled` | `true` | Notification banners while the phone is closed |
 | `Config.Push.intervalMs` | 3 min | How often each player is checked for new notifications |
 | `Config.Session.heartbeatMs` | 5 min | Keep-alive interval |
@@ -124,7 +125,7 @@ character should be there. Then open the app and post something.
 
 | Symptom | Cause |
 |---|---|
-| Players can't find the app | With `appStoreOnly = true` it lives in the phone's App Store and has to be installed from there. Set it to `false` to pre-install it instead |
+| Players can't find the app | With `appStoreOnly = true` it lives in the phone's App Store and has to be installed from there. The default is `false`, which puts it straight on the home screen |
 | App missing entirely | No supported phone was started. After 30 s the client log says `no phone (qs-smartphone / lb-phone) started` |
 | `401` in the console | Key invalid or revoked. The resource re-registers itself after three of them, unless you set the key by hand, in which case regenerate it on the dashboard |
 | Feed looks empty | It is in-character only, and there is nothing to show until characters start posting |

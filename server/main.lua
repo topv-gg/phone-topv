@@ -1119,7 +1119,13 @@ end
 -- never delay a player whose post is already published.
 local function relayPostToDiscord(data)
     local cfg = Config.Discord
-    if not cfg or type(cfg.webhook) ~= 'string' or cfg.webhook == '' then return end
+    -- The webhook is a credential, so it is read from server.cfg first, next
+    -- to the API key. `Config.Discord.webhook` stays as a fallback for setups
+    -- that already filled it in, but a value written in the resource travels
+    -- with the resource, which is exactly what we do not want for a secret.
+    local webhook = GetConvar('topv_discord_webhook', '')
+    if webhook == '' and cfg and type(cfg.webhook) == 'string' then webhook = cfg.webhook end
+    if not cfg or webhook == '' then return end
     if type(data) ~= 'table' then return end
 
     local embed = {
@@ -1153,7 +1159,7 @@ local function relayPostToDiscord(data)
         embed.url = 'https://topv.gg/fr/rolistes/' .. data.author.username .. '/p/' .. data.id
     end
 
-    PerformHttpRequest(cfg.webhook, function() end, 'POST', json.encode({
+    PerformHttpRequest(webhook, function() end, 'POST', json.encode({
         username   = cfg.botName or 'TopV Social',
         avatar_url = cfg.botAvatar or nil,
         embeds     = { embed },
