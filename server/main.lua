@@ -125,30 +125,47 @@ do
     -- 1.0.1-1.2.0 spot, one level out — readable on Windows, never on Linux.
     -- Reading both costs nothing and covers every server whatever version it
     -- is updating from.
-    local inside  = LoadResourceFile(RESOURCE, AUTO_KEY_FILE)
-    local outside = LoadResourceFile(RESOURCE, AUTO_KEY_FILE_OUTSIDE)
-    local hasInside = inside ~= nil and inside ~= ''
-    local saved = hasInside and inside or outside
-    -- Bring it back home, once: something out there, nothing in here yet.
-    local mustBringBack = (not hasInside) and outside ~= nil and outside ~= ''
-    if saved and saved ~= '' then
-        local ok, data = pcall(json.decode, saved)
-        if ok and type(data) == 'table' then
-            -- Same requirement as topv.gg: hexadecimal, 16 to 64 characters. A looser
-            -- check here would let through an id the site then rejects silently — the
-            -- server would create a brand-new sheet on every start with nothing at all
-            -- reporting why.
-            if type(data.installId) == 'string'
-                and #data.installId >= 16 and #data.installId <= 64
-                and data.installId:match('^%x+$') then
-                INSTALL_ID = data.installId:lower()
-            end
-            AUTO_KEY_SLUG = data.slug
-            -- The stored key is only used when none was provided by hand.
-            if API_KEY == '' and type(data.apiKey) == 'string' and data.apiKey:find('^topv_sk_') then
-                API_KEY = data.apiKey
-                print(('^2[%s]^7 auto-generated key loaded (listing: %s)'):format(RESOURCE, tostring(data.slug)))
-            end
+    -- ⚠️ A FILE THAT EXISTS IS NOT A FILE THAT IDENTIFIES THIS SERVER.
+    -- When 1.0.1-1.2.0 managed to move the key out of the folder, it replaced
+    -- the old inner file with a note. That note is valid JSON and it is not
+    -- empty, so an existence test accepts it, finds no identity in it, and
+    -- never looks at the real file one level out. Those servers came back as a
+    -- brand-new listing. So we keep whichever file actually carries an install
+    -- id or a key, and ignore anything else sitting there.
+    --
+    -- Same requirement as topv.gg for the id: hexadecimal, 16 to 64 characters.
+    -- A looser check would let through an id the site then rejects silently —
+    -- the server would create a brand-new sheet on every start with nothing at
+    -- all reporting why.
+    local function readIdentity(raw)
+        if raw == nil or raw == '' then return nil end
+        local ok, data = pcall(json.decode, raw)
+        if not ok or type(data) ~= 'table' then return nil end
+        local hasId = type(data.installId) == 'string'
+            and #data.installId >= 16 and #data.installId <= 64
+            and data.installId:match('^%x+$') ~= nil
+        local hasKey = type(data.apiKey) == 'string' and data.apiKey:find('^topv_sk_') ~= nil
+        if not hasId and not hasKey then return nil end
+        return data, hasId, hasKey
+    end
+
+    local inside,  insideId,  insideKey  = readIdentity(LoadResourceFile(RESOURCE, AUTO_KEY_FILE))
+    local outside, outsideId, outsideKey = readIdentity(LoadResourceFile(RESOURCE, AUTO_KEY_FILE_OUTSIDE))
+    local data, hasId, hasKey = inside, insideId, insideKey
+    if data == nil then
+        data, hasId, hasKey = outside, outsideId, outsideKey
+    end
+    -- Bring it back home, once: an identity out there, none in here yet.
+    local mustBringBack = (inside == nil) and (outside ~= nil)
+    if data then
+        if hasId then
+            INSTALL_ID = data.installId:lower()
+        end
+        AUTO_KEY_SLUG = data.slug
+        -- The stored key is only used when none was provided by hand.
+        if API_KEY == '' and hasKey then
+            API_KEY = data.apiKey
+            print(('^2[%s]^7 auto-generated key loaded (listing: %s)'):format(RESOURCE, tostring(data.slug)))
         end
     end
     -- Bring it back home, once. Same key, same install id, same listing: a
