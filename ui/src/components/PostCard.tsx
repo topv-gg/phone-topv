@@ -249,7 +249,13 @@ export function PostCard({
                         <ImageGrid urls={post.imageUrls} sepia={deceased} />
                     )}
                     {post.youtubeVideoId && <YouTubeEmbed videoId={post.youtubeVideoId} />}
-                    {!post.youtubeVideoId && post.embedUrl && <PostVideo url={post.embedUrl} />}
+                    {!post.youtubeVideoId && post.embedUrl && (
+                        <PostVideo
+                            url={post.embedUrl}
+                            videoUrl={post.embedVideoUrl}
+                            poster={post.embedPosterUrl}
+                        />
+                    )}
 
                     <ReactionBar
                         post={post}

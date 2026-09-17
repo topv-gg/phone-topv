@@ -338,7 +338,7 @@ export function ChatScreen({
         recRef.current = null
         setRecording(false)
         if (rec && !sendIt) rec.ondataavailable = null
-        try { rec?.stop() } catch { /* already stopped */ }
+        try { rec?.stop() } catch { /* deja arrete */ }
         micStreamRef.current?.getTracks().forEach((t) => t.stop())
         micStreamRef.current = null
     }
@@ -349,21 +349,22 @@ export function ChatScreen({
         setMicErreur(null)
         try {
             if (!navigator.mediaDevices?.getUserMedia) {
-                setMicErreur('Micro indisponible sur cet appareil.')
+                setMicErreur(t('chat.micNoDevice'))
                 return
             }
             stream = await navigator.mediaDevices.getUserMedia({ audio: true })
         } catch (e) {
-            // By FAR the most frequent cause in game: lb-phone loads TopV in an
-            // iframe from another domain without `allow="microphone"`, and Chromium
-            // then refuses the microphone. See FIX-LBPHONE-MIC.ps1.
+            // By FAR the most frequent cause in game: the host phone loads TopV
+            // in an iframe from another domain without `allow="microphone"`, and
+            // Chromium then refuses the microphone. Nothing the player can do
+            // about it, so the message points at the server owner.
             const nom = (e as { name?: string } | null)?.name ?? ''
             setMicErreur(
                 nom === 'NotAllowedError'
-                    ? "Microphone denied by the phone. Run FIX-LBPHONE-MIC.ps1, then 'restart lb-phone'."
+                    ? t('chat.micDenied')
                     : nom === 'NotFoundError'
-                      ? 'No microphone found.'
-                      : `Microphone unavailable (${nom || 'unknown error'}).`,
+                      ? t('chat.micNotFound')
+                      : t('chat.micUnavailable', nom || 'unknown error'),
             )
             return
         }

@@ -19,21 +19,38 @@ end
 -- (pre-filled, claimable by the owner on the site) and an independent key is
 -- returned, stored in topv_autokey.json — the owner has NOTHING to do, the
 -- app works from the very first launch.
--- WHERE THE KEY FILE LIVES, AND WHY IT IS NOT INSIDE THIS RESOURCE.
+-- WHERE THE KEY FILE LIVES.
 --
--- It used to sit in this folder. That is how ~39 servers ended up sharing 3
--- keys: the resource folder was copied from one server to the next, and the
--- key went along with it. To topv.gg they were a single server.
+-- It sits in this folder, and that is on purpose since 1.3.0.
 --
--- One level out, the key is no longer part of what gets copied, zipped or
--- re-distributed. A server receiving a copy of this folder simply has no key,
--- asks for its own, and gets its own listing.
+-- Between 1.0.1 and 1.2.0 it was written ONE LEVEL OUT, so that copying the
+-- resource folder could not carry a key to another server. The idea was
+-- sound. The place is not reachable.
 --
--- Nothing here has to *detect* anything, and that is the point: there is no
--- judgement call left to get wrong on a legitimate server.
-local AUTO_KEY_FILE        = '../topv-autokey.json'
--- Where it lived before 1.0.1. Read once, migrated, then blanked.
-local AUTO_KEY_FILE_LEGACY = 'topv_autokey.json'
+-- MEASURED on a Linux server (FXServer 35245, the recommended build), with a
+-- control test in the same run:
+--
+--   write with '../'   -> reported as successful, but the file only appears
+--                         when the server SHUTS DOWN;
+--   read  with '../'   -> nil, both through FiveM and through `io.open`,
+--                         even on a file already sitting there;
+--   control, same call inside the folder -> read back without trouble.
+--
+-- So on every start the server failed to find its own key, asked for a new
+-- one, and topv.gg revoked the previous one. Counted in the database on
+-- EIGHT revocations, every one of them after this protection shipped,
+-- four of them for a single server in a single day. Copies prevented: none
+-- observed. The guard was costing more than it saved.
+--
+-- Windows was never affected, which is why three weeks went by unnoticed.
+--
+-- Not sharing this file is the owner's call again. It says DO NOT SHARE in
+-- plain words, inside.
+local AUTO_KEY_FILE        = 'topv_autokey.json'
+-- Where 1.0.1 to 1.2.0 put it. Still READ, never written: a Windows server
+-- updating from those versions has its key out there, and it is perfectly
+-- readable for them. Dropping this would cost them their listing.
+local AUTO_KEY_FILE_OUTSIDE = '../topv-autokey.json'
 
 -- INSTALL ID. This, and not the IP address, is what tells topv.gg "I am
 -- this particular server". Without it, two servers sharing one host were
@@ -93,31 +110,27 @@ local function autoKeyPayload()
     })
 end
 
--- Returns true only when the key really landed OUTSIDE the resource folder.
+-- Writes the key next to the resource's own files.
 --
--- The read-back is not paranoia: on a locked-down or read-only host the write
--- silently does nothing, and the caller is about to blank the old copy. Acting
--- on an unverified write would cost that server its listing.
+-- No read-back any more. It existed to prove the write had landed OUTSIDE the
+-- folder, which could silently fail. Inside the folder that check answers a
+-- question nobody is asking: the control test showed this path reads back
+-- fine on both Linux and Windows.
 local function saveAutoKeyFile()
-    local payload = autoKeyPayload()
-    SaveResourceFile(RESOURCE, AUTO_KEY_FILE, payload, -1)
-    if LoadResourceFile(RESOURCE, AUTO_KEY_FILE) == payload then return true end
-    -- Cannot write outside: keep the pre-1.0.1 behaviour rather than lose the
-    -- key. Such a server stays exposed to the copied-key problem, but it keeps
-    -- working, which matters more.
-    SaveResourceFile(RESOURCE, AUTO_KEY_FILE_LEGACY, payload, -1)
-    return false
+    SaveResourceFile(RESOURCE, AUTO_KEY_FILE, autoKeyPayload(), -1)
 end
 
 do
-    -- New location first, then the pre-1.0.1 one. A server updating from an
-    -- earlier version finds its key exactly where it left it.
-    local outside = LoadResourceFile(RESOURCE, AUTO_KEY_FILE)
-    local inside  = LoadResourceFile(RESOURCE, AUTO_KEY_FILE_LEGACY)
-    local hasOutside = outside ~= nil and outside ~= ''
-    local saved = hasOutside and outside or inside
-    -- Migrate only when there is something inside and nothing outside yet.
-    local mustMigrate = (not hasOutside) and inside ~= nil and inside ~= ''
+    -- Inside first: that is where the key lives from 1.3.0 on. Then the
+    -- 1.0.1-1.2.0 spot, one level out — readable on Windows, never on Linux.
+    -- Reading both costs nothing and covers every server whatever version it
+    -- is updating from.
+    local inside  = LoadResourceFile(RESOURCE, AUTO_KEY_FILE)
+    local outside = LoadResourceFile(RESOURCE, AUTO_KEY_FILE_OUTSIDE)
+    local hasInside = inside ~= nil and inside ~= ''
+    local saved = hasInside and inside or outside
+    -- Bring it back home, once: something out there, nothing in here yet.
+    local mustBringBack = (not hasInside) and outside ~= nil and outside ~= ''
     if saved and saved ~= '' then
         local ok, data = pcall(json.decode, saved)
         if ok and type(data) == 'table' then
@@ -138,23 +151,18 @@ do
             end
         end
     end
-    -- Move it out, once. Same key, same install id, same listing: a move,
-    -- never a reset.
-    if mustMigrate and (API_KEY ~= '' or INSTALL_ID ~= '') then
-        if saveAutoKeyFile() then
-            -- FiveM has no delete-file call, so the old copy is emptied of
-            -- everything that identifies the server. What stays behind is a
-            -- note for whoever opens it.
-            SaveResourceFile(RESOURCE, AUTO_KEY_FILE_LEGACY, json.encode({
-                note = 'Moved. The TopV key now lives one level up, next to this resource folder, so that copying phone-topv cannot carry a key to another server. This file is empty on purpose — you can delete it.',
-            }), -1)
-            -- `print` and not `warn`: warn is declared further down this file.
-            print(('^2[%s]^7 key moved out of the resource folder (now %s) — same key, same listing.')
-                :format(RESOURCE, AUTO_KEY_FILE))
-        else
-            print(('^3[%s]^7 could not write %s (read-only host?) — the key stays in %s, and this server remains exposed to the copied-key problem.')
-                :format(RESOURCE, AUTO_KEY_FILE, AUTO_KEY_FILE_LEGACY))
-        end
+    -- Bring it back home, once. Same key, same install id, same listing: a
+    -- move, never a reset.
+    --
+    -- ⚠️ The old file outside is NOT cleared. FiveM cannot delete a file, and
+    -- blanking it means writing outside — which on Linux only lands when the
+    -- server shuts down. It harms nobody where it is, and it stays as a safety
+    -- net for anyone rolling back.
+    if mustBringBack and (API_KEY ~= '' or INSTALL_ID ~= '') then
+        saveAutoKeyFile()
+        -- `print` and not `warn`: warn is declared further down this file.
+        print(('^2[%s]^7 key brought back into the resource folder (now %s) — same key, same listing.')
+            :format(RESOURCE, AUTO_KEY_FILE))
     end
     if INSTALL_ID == '' then
         INSTALL_ID = generateInstallId()
@@ -1186,6 +1194,31 @@ actions['post.create'] = function(_, sess, p)
     }
 end
 
+-- ⭐ THE PRE-POST PREVIEW NEEDS THE VIDEO, NOT THE PAGE.
+-- The mp4 address is not in the clip link: Medal advertises it in its page's
+-- share metadata. Reading that from the game would mean loading their whole
+-- page inside the phone. The website does it once, caches it for six hours,
+-- and every player benefits.
+actions['medal.resolve'] = function(_, _, p)
+    local url = cleanImageUrl(p.clipUrl)
+    if not url or not url:find('^https://medal%.tv/') then return nil, 'bad_clip_url' end
+    return '/api/v1/ingame/medal/resolve', { clipUrl = url }
+end
+
+-- Which of these clips are REALLY online at Medal? The application on the
+-- player's machine cannot tell: it hands out a public id the moment it
+-- records, before any upload. Only the website can settle it, by going and
+-- looking. So we ask in small batches, as the player scrolls.
+actions['medal.check'] = function(_, _, p)
+    local urls = cleanStringArray(p.clipUrls, 12, function(u)
+        local propre = cleanImageUrl(u)
+        if propre and propre:find('^https://medal%.tv/') then return propre end
+        return nil
+    end)
+    if not urls then return nil, 'bad_urls' end
+    return '/api/v1/ingame/medal/resolve', { clipUrls = urls }
+end
+
 actions['post.get'] = function(_, sess, p)
     local id = cleanId(p.postId)
     if not id then return nil, 'bad_id' end
@@ -1445,7 +1478,7 @@ actions['dm.typing'] = function(_, sess, p)
     }
 end
 
--- Pin a message at the top of a thread (2026-07-26). Who may unpin, and the
+-- Pin a message at the top of a thread. Who may unpin, and the
 -- cap of 3, are decided by topv.gg — the site and the phone share one rule.
 actions['dm.pin'] = function(_, sess, p)
     local messageId = cleanId(p.messageId)
@@ -1486,7 +1519,7 @@ actions['dm.delete'] = function(_, _, p)
     return '/api/v1/ingame/dm/delete', { messageId = messageId }
 end
 
--- Group conversations (2026-07-25). ONE relay action for every group operation
+-- Group conversations. ONE relay action for every group operation
 -- (create / add / remove / leave / rename), chosen deliberately: the actions in
 -- this file are hard-coded, and a resource shipped inside the Quasar package can
 -- never be updated again. A single door here means new group features can ship

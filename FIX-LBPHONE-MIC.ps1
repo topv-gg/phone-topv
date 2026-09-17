@@ -10,7 +10,7 @@
 #  iframe carries allow="microphone". lb-phone sets none.
 #
 #  The result: getUserMedia fails with NotAllowedError and the phone screen
-#  reads "Microphone denied by the phone". Diagnosed 2026-08-01.
+#  reads "Microphone denied by the phone".
 #
 #  This script adds the attribute. It is a no-op where it is already set,
 #  and keeps a copy of each original file (.before-topv-mic).
@@ -20,14 +20,13 @@
 #  em dash or an accented letter becomes several bytes there, and the first
 #  string it meets ends up unterminated. An earlier version therefore did NOT
 #  run at all - it died on a parse error, while the phone screen was telling
-#  the owner to run it. Seen 2026-08-07.
+#  the owner to run it.
 #
 #  AND EVERY IFRAME MUST BE TREATED, NOT JUST ONE.
 #  The first version only targeted the `iframe`,{ref: pattern. The bundle
 #  holds five, and the APPLICATIONS one does not have that shape (it starts
 #  with {style:{backfaceVisibility:). The microphone stayed denied while the
-#  script reported success. Seen 2026-08-08 - two evenings lost to an
-#  incomplete fix.
+#  script reported success.
 # =====================================================================
 
 # WHERE IS lb-phone? Found by walking up from this script, so the file works

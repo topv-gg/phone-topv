@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TopV — relais Medal</title>
+</head>
+<body>
+<script>
+/**
+ * LE RELAIS VERS MEDAL.
+ *
+ * POURQUOI CETTE PAGE EXISTE.
+ * Medal ouvre une petite porte sur la machine du joueur (127.0.0.1, ports
+ * 26905 a 26914) et FILTRE SUR L'ORIGINE de qui frappe. Mesure du 02/09 :
+ *
+ *     https://cfx-nui-<ressource>   -> 200   <-- cette page
+ *     https://topv.gg               -> 403   <-- l'interface du telephone
+ *
+ * L'interface est servie par topv.gg : elle est refusee par Medal, et le sera
+ * toujours. Cette page-ci est servie par la RESSOURCE, donc sous une adresse
+ * `cfx-nui-` : elle a le droit de parler a Medal. L'interface la charge dans
+ * un cadre invisible et lui pose ses questions.
+ *
+ * ⚠️ LE JETON NE SORT JAMAIS D'ICI. `/health` renvoie un jeton de session
+ * local. Il reste dans cette page. Ce qui repart vers l'interface : des
+ * identifiants publics de clips et des vignettes reduites a 320 px.
+ *
+ * ⚠️ ON N'ENVOIE QUE LES CLIPS DEJA PUBLIES SUR MEDAL (`remoteId` present).
+ * Un clip sans `remoteId` n'existe que sur le disque du joueur : le partager
+ * donnerait un lien mort.
+ */
+
+(function () {
+    'use strict'
+
+    var PORT_BASE = 26905
+    var NB_PORTS = 10
+    // Une porte fermee ne repond pas : sans limite de temps, la decouverte
+    // resterait suspendue sur le premier port muet.
+    var DELAI_PORT_MS = 900
+    // ⚠️ JUSTE APRES UN CLIP, MEDAL ENCODE ET REPOND LENTEMENT.
+    // On lui laissait 900 ms : le telephone concluait qu'il etait ferme et
+    // affichait « Ouvre Medal sur ton PC » alors qu'il tournait. Ces delais
+    // ne concernent QU'UN port deja connu, pas les dix : ils ne coutent rien
+    // quand tout va bien. Vecu le 05/09.
+    var DELAI_SESSION_MS = 2500
+    var DELAI_SESSION_2_MS = 4000
+    var DELAI_APPEL_MS = 5000
+    // Une tuile fait moins de 200 px de large a l'ecran. Medal, lui, donne
+    // sa vignette en taille reelle : quelques dizaines de ko chacune, que le
+    // navigateur du jeu doit decoder. A soixante clips, il se bloquait.
+    var LARGEUR_VIGNETTE = 320
+    var QUALITE_VIGNETTE = 0.72
+
+    /** Ce qu'on a trouve, garde pour ne pas refrapper aux dix portes. */
+    var session = null
+
+    // Le numero de la question revient avec la reponse : sans lui, vingt
+    // demandes de vignette lancees ensemble se volaient leurs reponses.
+    function repondre(action, charge, idDemande) {
+        var message = { type: 'topv-medal-reponse', action: action, id: idDemande }
+        for (var cle in charge) if (Object.prototype.hasOwnProperty.call(charge, cle)) message[cle] = charge[cle]
+        try {
+            parent.postMessage(message, '*')
+        } catch (e) {
+            /* le parent a disparu : rien a faire */
+        }
+    }
+
+    function avecDelai(url, options, ms) {
+        var arret = new AbortController()
+        var minuteur = setTimeout(function () { arret.abort() }, ms)
+        var o = options || {}
+        o.signal = arret.signal
+        return fetch(url, o).then(
+            function (r) { clearTimeout(minuteur); return r },
+            function (e) { clearTimeout(minuteur); throw e },
+        )
+    }
+
+    /**
+     * Les dix ports sont frappes EN MEME TEMPS, pas l'un apres l'autre : en
+     * serie, dix portes muettes coutaient jusqu'a neuf secondes avant de
+     * conclure, et l'interface abandonnait avant la reponse.
+     */
+    /**
+     * ⚠️ UNE SESSION TROUVEE N'EST PAS UNE SESSION VALABLE POUR TOUJOURS.
+     * On la gardait telle quelle : Medal ferme, le telephone continuait
+     * d'afficher la bibliotheque comme si de rien n'etait (vecu le 05/09).
+     * On redemande donc au port connu a chaque fois. C'est UN appel local, sans
+     * cout reel, et c'est la seule facon de voir Medal disparaitre. Si le port
+     * ne repond plus, on oublie et on refrappe aux dix portes : Medal a pu
+     * redemarrer ailleurs.
+     */
+    function decouvrir() {
+        if (!session) return chercherPartout()
+
+        return verifierSession(DELAI_SESSION_MS).then(function (s) {
+            if (s) return s
+            // Deuxieme chance, plus patiente. Un silence passager pendant un
+            // encodage n'est pas une fermeture : conclure au premier essai
+            // faisait disparaitre la bibliotheque juste apres chaque clip.
+            return verifierSession(DELAI_SESSION_2_MS).then(function (s2) {
+                if (s2) return s2
+                session = null
+                return chercherPartout()
+            })
+        })
+    }
+
+    /** Le port connu repond-il toujours, et est-ce toujours Medal ? */
+    function verifierSession(ms) {
+        return avecDelai('http://127.0.0.1:' + session.port + '/health', null, ms)
+            .then(function (r) { return r.ok ? r.json() : null })
+            .then(function (d) {
+                if (!d || d.app !== 'medal') return null
+                // Le jeton et l'etat de connexion peuvent avoir change pendant
+                // que le joueur etait ailleurs.
+                session.token = d.token || session.token
+                session.connecte = d.loggedIn === true
+                return session
+            })
+            .catch(function () { return null })
+    }
+
+    function chercherPartout() {
+        var essais = []
+        for (var i = 0; i < NB_PORTS; i++) {
+            (function (port) {
+                essais.push(
+                    avecDelai('http://127.0.0.1:' + port + '/health', null, DELAI_PORT_MS)
+                        .then(function (r) { return r.ok ? r.json() : null })
+                        .then(function (d) {
+                            // On n'accepte QUE Medal : un autre programme peut
+                            // tres bien ecouter sur un de ces ports.
+                            if (!d || d.app !== 'medal') return null
+                            return { port: port, token: d.token || '', connecte: d.loggedIn === true }
+                        })
+                        .catch(function () { return null }),
+                )
+            })(PORT_BASE + i)
+        }
+
+        return Promise.all(essais).then(function (resultats) {
+            for (var i = 0; i < resultats.length; i++) {
+                if (resultats[i]) { session = resultats[i]; return session }
+            }
+            return null
+        })
+    }
+
+    function appelMedal(chemin) {
+        return avecDelai(
+            'http://127.0.0.1:' + session.port + chemin,
+            { headers: { 'x-medal-token': session.token } },
+            DELAI_APPEL_MS,
+        )
+    }
+
+    /** Medal est-il la, et le joueur y est-il connecte ? */
+    function actionDetecter(idD) {
+        return decouvrir().then(function (s) {
+            if (!s) return repondre('detecter', { etat: 'introuvable' }, idD)
+            repondre('detecter', { etat: s.connecte ? 'pret' : 'deconnecte' }, idD)
+        })
+    }
+
+    /** Ses clips, les plus recents d'abord. */
+    function actionClips(limite, idD) {
+        var n = Math.max(1, Math.min(60, parseInt(limite, 10) || 24))
+        return decouvrir()
+            .then(function (s) {
+                if (!s) { repondre('clips', { etat: 'introuvable' }, idD); return null }
+                if (!s.connecte) { repondre('clips', { etat: 'deconnecte' }, idD); return null }
+                return appelMedal('/clips/recent?limit=' + n)
+            })
+            .then(function (r) {
+                if (!r) return
+                if (!r.ok) return repondre('clips', { etat: 'erreur' }, idD)
+                return r.json().then(function (brut) {
+                    var liste = Array.isArray(brut) ? brut : (brut && brut.clips) || []
+                    var clips = []
+                    for (var i = 0; i < liste.length; i++) {
+                        var c = liste[i] || {}
+                        // ⚠️ CE FILTRE NE PROTEGE DE RIEN, contrairement a ce
+                        // qu'il laissait croire. Mesure du 05/09 : Medal donne
+                        // `remoteId` DES L'ENREGISTREMENT, egal a `id`, bien
+                        // avant tout envoi en ligne. Rien ici ne dit si un clip
+                        // est publiable. C'est le serveur qui le determine, en
+                        // allant voir chez Medal (action `medal.check`). On
+                        // garde la ligne pour le jour ou un clip arriverait
+                        // sans identifiant du tout.
+                        if (!c.remoteId) continue
+                        clips.push({
+                            id: String(c.remoteId),
+                            url: c.url || c.remoteUrl || '',
+                            titre: c.title || c.name || '',
+                            jeu: c.gameTitle || c.categoryName || c.game || null,
+                            // Les noms de champ varient selon les versions de
+                            // Medal : on prend le premier qui ressemble a une
+                            // date, et une date absente n'empeche rien.
+                            date: lireDate(c),
+                            localId: c.localId ? String(c.localId) : null,
+                        })
+                    }
+                    repondre('clips', { etat: 'ok', clips: clips }, idD)
+                })
+            })
+            .catch(function () { repondre('clips', { etat: 'erreur' }, idD) })
+    }
+
+    function lireDate(c) {
+        var candidats = [c.createdAt, c.created, c.date, c.timestamp, c.recordedAt]
+        for (var i = 0; i < candidats.length; i++) {
+            var v = candidats[i]
+            if (typeof v === 'number' && isFinite(v)) return v < 1e12 ? v * 1000 : v
+            if (typeof v === 'string') {
+                var t = Date.parse(v)
+                if (!isNaN(t)) return t
+            }
+        }
+        return null
+    }
+
+    /**
+     * Reduit la vignette AVANT qu'elle traverse. Le commentaire d'origine
+     * promettait des « vignettes deja reduites » ; elles ne l'etaient pas, on
+     * renvoyait le fichier tel quel. Vecu le 05/09 : le telephone se figeait.
+     * Si quoi que ce soit echoue, on rend `null` et l'appelant enverra
+     * l'original : une vignette lourde vaut mieux qu'une tuile vide.
+     */
+    function reduire(blob) {
+        return new Promise(function (resoudre) {
+            var adresse = URL.createObjectURL(blob)
+            var image = new Image()
+            image.onload = function () {
+                try {
+                    var l = image.naturalWidth || LARGEUR_VIGNETTE
+                    var h = image.naturalHeight || LARGEUR_VIGNETTE
+                    var echelle = Math.min(1, LARGEUR_VIGNETTE / l)
+                    var toile = document.createElement('canvas')
+                    toile.width = Math.max(1, Math.round(l * echelle))
+                    toile.height = Math.max(1, Math.round(h * echelle))
+                    toile.getContext('2d').drawImage(image, 0, 0, toile.width, toile.height)
+                    var petite = toile.toDataURL('image/jpeg', QUALITE_VIGNETTE)
+                    URL.revokeObjectURL(adresse)
+                    resoudre(petite && petite.length > 32 ? petite : null)
+                } catch (e) {
+                    URL.revokeObjectURL(adresse)
+                    resoudre(null)
+                }
+            }
+            image.onerror = function () {
+                URL.revokeObjectURL(adresse)
+                resoudre(null)
+            }
+            image.src = adresse
+        })
+    }
+
+    function enDataUrl(blob) {
+        return new Promise(function (resoudre) {
+            var lecteur = new FileReader()
+            lecteur.onload = function () { resoudre(String(lecteur.result || '')) }
+            lecteur.onerror = function () { resoudre('') }
+            lecteur.readAsDataURL(blob)
+        })
+    }
+
+    /**
+     * La vignette vit sur le disque du joueur, derriere son jeton. L'interface
+     * est en https : elle ne peut pas charger une image en http://127.0.0.1
+     * (contenu mixte, bloque par le navigateur, et sans message). On la lit
+     * donc ICI et on ne renvoie que l'image encodee.
+     */
+    function actionVignette(localId, idD) {
+        if (!localId) return Promise.resolve(repondre('vignette', { etat: 'erreur' }, idD))
+        return decouvrir()
+            .then(function (s) {
+                if (!s) { repondre('vignette', { etat: 'introuvable' }, idD); return null }
+                return avecDelai(
+                    'http://127.0.0.1:' + s.port + '/clips/' + encodeURIComponent(localId) +
+                        '/thumbnail?token=' + encodeURIComponent(s.token),
+                    null,
+                    DELAI_APPEL_MS,
+                )
+            })
+            .then(function (r) {
+                if (!r) return
+                if (!r.ok) return repondre('vignette', { etat: 'erreur' }, idD)
+                return r.blob().then(function (b) {
+                    return reduire(b).then(function (petite) {
+                        if (petite) return repondre('vignette', { etat: 'ok', image: petite }, idD)
+                        return enDataUrl(b).then(function (brute) {
+                            if (brute) repondre('vignette', { etat: 'ok', image: brute }, idD)
+                            else repondre('vignette', { etat: 'erreur' }, idD)
+                        })
+                    })
+                })
+            })
+            .catch(function () { repondre('vignette', { etat: 'erreur' }, idD) })
+    }
+
+    /**
+     * ⭐ OUVRIR UNE VRAIE PAGE, DEPUIS LE JEU.
+     *
+     * L'interface du telephone est servie par topv.gg : dans une page etrangere
+     * au jeu, un lien ne peut RIEN ouvrir. Cette page-ci, elle, est servie par
+     * la ressource, donc sous une adresse `cfx-nui-` : le jeu y injecte
+     * `invokeNative`, et `openUrl` lance le navigateur par defaut de Windows.
+     *
+     * C'est la seule porte de sortie vers le web depuis l'interieur du jeu, et
+     * elle explique a elle seule pourquoi le bouton « Telecharger Medal » ne
+     * pouvait que copier un lien jusqu'ici.
+     *
+     * ⚠️ ON N'OUVRE QUE DU https. Un `file:` ou un `javascript:` transmis
+     * depuis l'interface deviendrait une commande executee sur la machine.
+     */
+    function actionOuvrirLien(adresse, idD) {
+        if (typeof adresse !== 'string' || !/^https:\/\//i.test(adresse)) {
+            return repondre('ouvrirLien', { etat: 'refuse' }, idD)
+        }
+        try {
+            if (typeof window.invokeNative !== 'function') {
+                // Hors du jeu (navigateur, mobile) : personne pour ouvrir.
+                return repondre('ouvrirLien', { etat: 'indisponible' }, idD)
+            }
+            window.invokeNative('openUrl', adresse)
+            repondre('ouvrirLien', { etat: 'ok' }, idD)
+        } catch (e) {
+            repondre('ouvrirLien', { etat: 'erreur' }, idD)
+        }
+    }
+
+    window.addEventListener('message', function (ev) {
+        var d = ev && ev.data
+        if (!d || d.type !== 'topv-medal') return
+        if (d.action === 'detecter') return void actionDetecter(d.id)
+        if (d.action === 'clips') return void actionClips(d.limite, d.id)
+        if (d.action === 'vignette') return void actionVignette(d.localId, d.id)
+        if (d.action === 'ouvrirLien') return void actionOuvrirLien(d.adresse, d.id)
+    })
+
+    // L'interface attend ce signal avant de poser sa premiere question. Sans
+    // lui, elle devrait deviner par un delai et parlerait dans le vide.
+    try {
+        parent.postMessage({ type: 'topv-medal-pret' }, '*')
+    } catch (e) {
+        /* charge hors d'un cadre : cette page n'a alors rien a faire */
+    }
+})()
+</script>
+</body>
+</html>

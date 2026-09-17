@@ -38,6 +38,8 @@ export type Route =
     | { name: 'secureAccount' }
     // App settings (light/dark appearance).
     | { name: 'settings' }
+    // The player's Medal clips: out of character, reached from settings.
+    | { name: 'medal' }
 
 type NavContextValue = {
     tab: TabName

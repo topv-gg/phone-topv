@@ -59,8 +59,8 @@ export function FollowsScreen({ username, kind, characterName }: { username: str
             //
             // 2. The first page was deduplicated by NOTHING (`return incoming`).
             // Following someone from their account AND THEN from a character
-            // creates two rows towards the same target, and the same person
-            // appeared twice in a row.
+            // creates two rows towards the same target — that is what showed
+            // the same name twice in a row.
             const cle = (a: AccountRow) => a.activeCharacter?.id ?? `@${a.username}`
             const base = fromCursor ? prev : []
             const vus = new Set(base.map(cle))

@@ -1,5 +1,20 @@
 import { getLocale, t } from './i18n'
 
+/**
+ * `toLocaleDateString` throws on an invalid language tag, and host phones
+ * offer dubious ones (`dk` instead of `da`). A badly formatted date must never
+ * take a whole screen down.
+ */
+function localeSure(): string | undefined {
+    const l = getLocale()
+    try {
+        new Intl.DateTimeFormat(l)
+        return l
+    } catch {
+        return undefined
+    }
+}
+
 export function compact(n: number | undefined | null): string {
     const v = typeof n === 'number' && Number.isFinite(n) ? n : 0
     if (v < 1000) return String(v)
@@ -22,14 +37,14 @@ export function timeAgo(iso: string | undefined | null): string {
     const days = Math.floor(hours / 24)
     if (days < 7) return `${days}d`
     const date = new Date(then)
-    return date.toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' })
+    return date.toLocaleDateString(localeSure(), { day: 'numeric', month: 'short' })
 }
 
 export function clockTime(iso: string | undefined | null): string {
     if (!iso) return ''
     const ts = Date.parse(iso)
     if (Number.isNaN(ts)) return ''
-    return new Date(ts).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' })
+    return new Date(ts).toLocaleTimeString(localeSure(), { hour: '2-digit', minute: '2-digit' })
 }
 
 const HASHTAG_RE = /(^|\s)#([\p{L}\p{N}_-]{2,32})/gu

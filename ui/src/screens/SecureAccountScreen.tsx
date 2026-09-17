@@ -17,6 +17,8 @@ import { VerifiedBadge } from '@/components/VerifiedBadge'
  */
 export function SecureAccountScreen() {
   const nav = useNav()
+  /** The mobile app's QR code, opened on top: see the header. */
+  const [qrApp, setQrApp] = useState(false)
   const [qr, setQr] = useState<string | null>(null)
   const [phase, setPhase] = useState<'loading' | 'ready' | 'linked' | 'expired' | 'error'>(
     getDeviceToken() ? 'linked' : 'loading',
@@ -65,6 +67,11 @@ export function SecureAccountScreen() {
   const loc = getLocale()
   const L = (o: Record<string, string>) => o[loc] ?? o.en
   const T = {
+    appLigne: L({ fr: 'Ton personnage sur ton téléphone', en: 'Your character on your phone', es: 'Tu personaje en tu teléfono', de: 'Dein Charakter auf deinem Handy', pt: 'A tua personagem no teu telemóvel', tr: 'Karakterin telefonunda', it: 'Il tuo personaggio sul telefono', pl: 'Twoja postać w telefonie', nl: 'Je personage op je telefoon', ro: 'Personajul tău pe telefonul tău', ru: 'Твой персонаж в телефоне', ja: 'スマホでもキャラクターを', zh: '把你的角色带在手机上', ko: '내 캐릭터를 휴대폰에서', bg: 'Героят ти в телефона' }),
+    appPlateformes: L({ fr: 'iOS et Android', en: 'iOS and Android', es: 'iOS y Android', de: 'iOS und Android', pt: 'iOS e Android', tr: 'iOS ve Android', it: 'iOS e Android', pl: 'iOS i Android', nl: 'iOS en Android', ro: 'iOS și Android', ru: 'iOS и Android', ja: 'iOS と Android', zh: 'iOS 和 Android', ko: 'iOS와 Android', bg: 'iOS и Android' }),
+    appTitre: L({ fr: "Télécharge l'application pour continuer ton roleplay en dehors du jeu", en: 'Download the app to keep your roleplay going outside the game', es: 'Descarga la aplicación para seguir tu rol fuera del juego', de: 'Lade die App, um dein Rollenspiel außerhalb des Spiels fortzusetzen', pt: 'Descarrega a aplicação para continuares o teu roleplay fora do jogo', tr: 'Rolünü oyun dışında da sürdürmek için uygulamayı indir', it: 'Scarica l\'app per continuare il tuo roleplay fuori dal gioco', pl: 'Pobierz aplikację, aby kontynuować roleplay poza grą', nl: 'Download de app om je roleplay buiten de game voort te zetten', ro: 'Descarcă aplicația ca să continui roleplay-ul în afara jocului', ru: 'Скачай приложение, чтобы продолжать ролевую игру вне игры', ja: 'アプリを入れて、ゲームの外でもロールプレイを続けよう', zh: '下载应用，在游戏之外继续你的角色扮演', ko: '앱을 받아 게임 밖에서도 롤플레이를 이어가세요', bg: 'Изтегли приложението, за да продължиш роуплея извън играта' }),
+    appScanne: L({ fr: 'Scanne ce code avec ton téléphone', en: 'Scan this code with your phone', es: 'Escanea este código con tu teléfono', de: 'Scanne diesen Code mit deinem Handy', pt: 'Digitaliza este código com o teu telemóvel', tr: 'Bu kodu telefonunla tara', it: 'Scansiona questo codice col telefono', pl: 'Zeskanuj ten kod telefonem', nl: 'Scan deze code met je telefoon', ro: 'Scanează acest cod cu telefonul', ru: 'Отсканируй код телефоном', ja: 'このコードをスマホで読み取ってください', zh: '用手机扫描此码', ko: '휴대폰으로 이 코드를 스캔하세요', bg: 'Сканирай кода с телефона си' }),
+    appFermer: L({ fr: 'Fermer', en: 'Close', es: 'Cerrar', de: 'Schließen', pt: 'Fechar', tr: 'Kapat', it: 'Chiudi', pl: 'Zamknij', nl: 'Sluiten', ro: 'Închide', ru: 'Закрыть', ja: '閉じる', zh: '关闭', ko: '닫기', bg: 'Затвори' }),
     title: L({ fr: 'Sécuriser mon compte', en: 'Secure my account', es: 'Asegurar mi cuenta', de: 'Konto sichern', pt: 'Proteger a minha conta', tr: 'Hesabımı güvene al', it: 'Proteggi il mio account', pl: 'Zabezpiecz konto', nl: 'Mijn account beveiligen', ro: 'Securizează contul', ru: 'Защитить аккаунт', ja: 'アカウントを保護', zh: '保护我的账户', ko: '내 계정 보호', bg: 'Защити акаунта ми' }),
     lead: L({ fr: 'Scanne ce code avec ton téléphone pour relier ce compte à toi.', en: 'Scan this code with your phone to bind this account to you.', es: 'Escanea este código con tu teléfono para vincular esta cuenta contigo.', de: 'Scanne diesen Code mit deinem Handy, um dieses Konto mit dir zu verknüpfen.', pt: 'Digitaliza este código com o teu telemóvel para associar esta conta a ti.', tr: 'Bu hesabı sana bağlamak için kodu telefonunla tara.', it: 'Scansiona questo codice col telefono per collegare questo account a te.', pl: 'Zeskanuj ten kod telefonem, aby powiązać to konto z tobą.', nl: 'Scan deze code met je telefoon om dit account aan jou te koppelen.', ro: 'Scanează acest cod cu telefonul pentru a lega acest cont de tine.', ru: 'Отсканируйте код телефоном, чтобы привязать аккаунт к себе.', ja: 'このコードをスマホでスキャンして、アカウントをあなたに紐づけましょう。', zh: '用手机扫描此代码，将此账户与你绑定。', ko: '이 코드를 휴대폰으로 스캔해 계정을 당신에게 연결하세요.', bg: 'Сканирай този код с телефона си, за да свържеш акаунта със себе си.' }),
     hint: L({ fr: 'Appareil photo → scanne → connecte-toi avec Discord → confirme.', en: 'Camera → scan → sign in with Discord → confirm.', es: 'Cámara → escanea → inicia sesión con Discord → confirma.', de: 'Kamera → scannen → mit Discord anmelden → bestätigen.', pt: 'Câmara → digitaliza → inicia sessão com Discord → confirma.', tr: 'Kamera → tara → Discord ile giriş yap → onayla.', it: 'Fotocamera → scansiona → accedi con Discord → conferma.', pl: 'Aparat → zeskanuj → zaloguj się przez Discord → potwierdź.', nl: 'Camera → scan → log in met Discord → bevestig.', ro: 'Cameră → scanează → conectează-te cu Discord → confirmă.', ru: 'Камера → скан → вход через Discord → подтверждение.', ja: 'カメラ → スキャン → Discordでログイン → 確認。', zh: '相机 → 扫描 → 用 Discord 登录 → 确认。', ko: '카메라 → 스캔 → Discord 로그인 → 확인.', bg: 'Камера → сканирай → влез с Discord → потвърди.' }),
@@ -114,6 +121,26 @@ export function SecureAccountScreen() {
               <>
                 <img src={pqr.qrImage} alt="QR profil" className="h-52 w-52 rounded-2xl bg-white p-2" />
                 <div className="text-[12px] font-semibold text-orange-500">@{pqr.username}</div>
+
+                {/* ⭐ ONE LINE, NOT A SECOND CODE. The screen already carries
+                    one (the public profile): two codes side by side and nobody
+                    knows which one to scan. */}
+                <button
+                  type="button"
+                  onClick={() => setQrApp(true)}
+                  className="mt-1 flex w-full max-w-[290px] items-center gap-3 rounded-2xl border border-zinc-200 bg-white/60 p-3 text-left active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900/60"
+                >
+                  <img src="qr-app.webp" alt="" className="h-11 w-11 flex-none rounded-lg bg-white p-0.5" />
+                  <span className="min-w-0">
+                    <span className="block text-[12.5px] font-bold leading-tight text-zinc-900 dark:text-zinc-50">
+                      {T.appLigne}
+                    </span>
+                    <span className="mt-0.5 block text-[10.5px] text-zinc-500 dark:text-zinc-400">
+                      {T.appPlateformes}
+                    </span>
+                  </span>
+                  <span className="ml-auto flex-none text-zinc-400">›</span>
+                </button>
               </>
             ) : (
               <Spinner className="h-5 w-5 text-zinc-400" />
@@ -145,6 +172,26 @@ export function SecureAccountScreen() {
           </>
         )}
       </div>
+
+      {/* ⚠️ ON TOP, without going through the navigation: nothing to declare
+          anywhere else, and the host phone's back button still returns to the
+          profile exactly as before. */}
+      {qrApp ? (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-paper px-6 dark:bg-ink">
+          <div className="max-w-[270px] text-center text-[13px] font-bold leading-snug text-zinc-900 dark:text-zinc-50">
+            {T.appTitre}
+          </div>
+          <img src="qr-app.webp" alt="" className="h-56 w-56 rounded-2xl bg-white p-2" />
+          <div className="text-[11.5px] text-zinc-500 dark:text-zinc-400">{T.appScanne}</div>
+          <button
+            type="button"
+            onClick={() => setQrApp(false)}
+            className="mt-1 rounded-full border border-zinc-200 px-5 py-2 text-[12px] font-semibold text-zinc-600 active:scale-95 dark:border-zinc-800 dark:text-zinc-300"
+          >
+            {T.appFermer}
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

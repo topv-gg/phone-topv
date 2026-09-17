@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNav } from '@/topv/nav'
-import { getLocale } from '@/topv/i18n'
+import { getLocale, t } from '@/topv/i18n'
 import { choixTheme, definirChoixTheme, type ChoixTheme } from '@/topv/theme'
 
 /**
@@ -91,6 +91,38 @@ export function SettingsScreen() {
           })}
         </div>
         <div className="mt-2 px-1 text-[11.5px] leading-relaxed text-zinc-400 dark:text-zinc-500">{T.autoHint}</div>
+
+        {/* ⚠️ MEDAL LIVES HERE, NOT ON THE CHARACTER PROFILE. The phone's
+            profile is strictly in character — its own code refuses to let any
+            out-of-character identity leak onto it. A button bearing the name of
+            a piece of software has no place there. Settings, on the other
+            hand, is exactly where it belongs. */}
+        <div className="mb-2 mt-7 px-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+          Medal
+        </div>
+        <button
+          type="button"
+          onClick={() => nav.push({ name: 'medal' })}
+          className="flex w-full items-center gap-3 rounded-2xl border border-zinc-200 px-4 py-3 text-left dark:border-zinc-800"
+        >
+          {/* Medal's real logo, not a generic film reel: the player recognises
+              the software sitting on their own desktop. */}
+          <img
+            src={'medal.webp' + location.search}
+            alt=""
+            draggable={false}
+            className="h-[22px] w-[22px] select-none object-contain"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold text-zinc-900 dark:text-zinc-50">
+              {t('medal.title')}
+            </span>
+            <span className="block text-[11.5px] text-zinc-400 dark:text-zinc-500">
+              {t('medal.settingsSubtitle')}
+            </span>
+          </span>
+          <span className="text-[15px] text-zinc-300 dark:text-zinc-600">›</span>
+        </button>
       </div>
     </div>
   )

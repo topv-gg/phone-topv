@@ -57,7 +57,7 @@ export function insertAtCaret(
         try {
             node.setSelectionRange(caret, caret)
         } catch {
-            /* some fields refuse selection */
+            /* certains champs refusent la selection */
         }
     })
 }

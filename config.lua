@@ -98,6 +98,23 @@ Config.UI = {
     baseUrl = 'https://topv.gg/phone/',
 }
 
+-- ── Medal ────────────────────────────────────────────────
+--
+-- In the phone, a player who does not have Medal is offered to install it.
+--
+-- If you would like to be paid for those installs, join Medal's affiliate
+-- programme THROUGH TOPV:
+--   https://partners.dub.co/medal-tv/apply?via=topv
+-- Once accepted, Medal gives you your own link. Paste it below.
+--
+-- Otherwise, leave this as it is. The button keeps working either way.
+--
+-- An empty or non-https value falls back to the default rather than leaving
+-- the player with a button that leads nowhere.
+Config.Medal = {
+    installUrl = 'https://ref.medal.tv/topv',
+}
+
 -- Real-time long-poll.
 Config.Poll = {
     timeoutMs  = 25000,

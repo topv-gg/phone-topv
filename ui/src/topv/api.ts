@@ -107,14 +107,14 @@ function harvestAvatars(value: unknown): void {
  * THE VERSION OF THIS INTERFACE, sent on every call.
  *
  * ⚠️ Without it, there is no way to know which version is running on a player's
- * machine: server traces once said “old interface” while the logs said “new
- * index.html loaded”. An old frame stays alive after a re-registration, and it
+ * machine: the server traces said "old interface" while the logs said "new
+ * index.html loaded". An old frame stays alive after a re-registration, and it
  * was THAT one calling.
  *
  * To be changed on every publication. It is a string, not a computed date: it has
  * to be frozen into the build.
  */
-export const UI_BUILD = '2026-08-25-b'
+export const UI_BUILD = '2026-09-17-154503'
 
 async function call<T>(action: string, payload?: Record<string, unknown>): Promise<ApiResult<T>> {
     try {
@@ -170,6 +170,26 @@ export const createPost = (input: {
     // characterMentions sidecar the renderer needs.
     characterMentions?: string[]
 }) => call<Post>('post.create', input)
+
+/**
+ * A Medal clip's actual VIDEO, so we can show it before posting.
+ * The mp4 address is not inside the clip link: the server reads it from Medal,
+ * once for everyone. Returns `null` when the clip is not online yet: there is
+ * then nothing to show.
+ */
+export const resoudreClipMedal = (clipUrl: string) =>
+    call<{ video: string | null; vignette: string | null; photo: string | null }>('medal.resolve', {
+        clipUrl,
+    })
+
+/**
+ * Which of these clips are REALLY online at Medal?
+ * Medal, on the player's own machine, cannot tell: it assigns a public id the
+ * moment it records, long before any upload. Only the server can settle it, by
+ * going and looking. Twelve at most per call.
+ */
+export const verifierClipsMedal = (clipUrls: string[]) =>
+    call<{ enLigne: string[]; photos: string[] }>('medal.check', { clipUrls })
 
 export const getPost = (postId: string) => call<Post>('post.get', { postId })
 

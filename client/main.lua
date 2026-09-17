@@ -56,7 +56,43 @@ local IMG_BUST = ''
 -- Called at the top of each register* function (incl. lb-phone restart re-register).
 local function refreshCacheBust()
     CACHE_BUST = '?v=' .. tostring(GetGameTimer()) .. '-' .. tostring(math.random(100000, 999999))
+    -- ⭐ THE FOLDER NAME TRAVELS WITH THE ADDRESS (1.3.0).
+    --
+    -- Served by topv.gg, the interface lives in a frame from another origin:
+    -- `GetParentResourceName()` does not reach it, and it cannot guess what
+    -- this folder is called. It needs to know, though — Medal's relay page
+    -- loads from `cfx-nui-<name>/`.
+    --
+    -- ⚠️ `&`, not `?`: the cache-busting token already holds the question
+    -- mark, and two `?` break the parsing of the address.
+    CACHE_BUST = CACHE_BUST .. '&res=' .. GetCurrentResourceName()
     IMG_BUST = (Config.UI and Config.UI.source == 'hosted') and '' or CACHE_BUST
+end
+
+-- ⭐ MEDAL'S INSTALL LINK TRAVELS IN THE INTERFACE ADDRESS.
+-- The interface is served by topv.gg: it cannot read `Config.Medal`, which
+-- lives here, inside the resource. So we hand it over as a parameter, and the
+-- "My clips" screen uses it for its install button. Without that hand-off,
+-- every server would send its players to TopV's link instead of its own, and
+-- would lose what Medal owes it.
+local function encoderUrl(s)
+    return (s:gsub('[^%w%-%.%_%~]', function (c)
+        return string.format('%%%02X', string.byte(c))
+    end))
+end
+
+local function lienMedal()
+    local u = Config.Medal and Config.Medal.installUrl
+    -- An empty or mistyped value must never produce a button that leads
+    -- nowhere: we fall back to TopV's link.
+    if type(u) == 'string' and u:find('^https://[%w%.%-]+%.%w+') then return u end
+    return 'https://ref.medal.tv/topv'
+end
+
+local function urlInterface()
+    local base = ui .. 'index.html' .. CACHE_BUST
+    local separateur = base:find('?', 1, true) and '&' or '?'
+    return base .. separateur .. 'medal=' .. encoderUrl(lienMedal())
 end
 
 local DEFAULT_TIMEOUT_MS = 20000
@@ -445,27 +481,19 @@ local function registerQuasar()
         whatsNew     = app.whatsNew,
         -- Store listing screenshots (carousel). qs-smartphone's `extraDescription`
         -- field: list of sections { header, head, image, footer }.
+        -- ⚠️ IMAGES ONLY, NO TEXT. The screenshots now carry their own title,
+        -- in large type, inside the image. Text beside them would repeat what
+        -- is already written on them.
+        -- The fields are ABSENT, not empty: an empty field can still be drawn
+        -- and leave a blank line behind.
         extraDescription = {
-            {
-                header = 'Your character lives 24/7',
-                head   = 'The RP social network that connects every city',
-                image  = ui .. 'preview1.webp' .. IMG_BUST,
-                footer = 'No matter which server they play on',
-            },
-            {
-                header = 'Your feed, in character',
-                head   = 'Stories, posts and reactions from those you follow',
-                image  = ui .. 'preview2.webp' .. IMG_BUST,
-                footer = 'All in-character, synced with topv.gg',
-            },
-            {
-                header = 'React, comment, repost',
-                head   = 'RP, respect, action, fun, drama',
-                image  = ui .. 'preview3.webp' .. IMG_BUST,
-                footer = 'Bring every scene to life',
-            },
+            { image = ui .. 'preview1.webp' .. IMG_BUST },
+            { image = ui .. 'preview2.webp' .. IMG_BUST },
+            { image = ui .. 'preview3.webp' .. IMG_BUST },
+            { image = ui .. 'preview4.webp' .. IMG_BUST },
+            { image = ui .. 'preview5.webp' .. IMG_BUST },
         },
-        iframe = { url = ui .. 'index.html' .. CACHE_BUST },
+        iframe = { url = urlInterface() },
         custom = {
             enabled        = true,
             sourceResource = GetCurrentResourceName(),
@@ -493,10 +521,13 @@ local function registerQuasar()
             age         = app.age,
             sizeMb      = app.sizeMb,
             version     = app.version,
+            -- Images only: see the comment above, same reason.
             extraDescription = {
-                { header = 'Your character lives 24/7',   head = 'The RP social network that connects every city', image = ui .. 'preview1.webp' .. IMG_BUST, footer = 'No matter which server they play on' },
-                { header = 'Your feed, in character',     head = 'Stories, posts and reactions from those you follow',  image = ui .. 'preview2.webp' .. IMG_BUST, footer = 'All in-character, synced with topv.gg' },
-                { header = 'React, comment, repost', head = 'RP, respect, action, fun, drama',               image = ui .. 'preview3.webp' .. IMG_BUST, footer = 'Bring every scene to life' },
+                { image = ui .. 'preview1.webp' .. IMG_BUST },
+                { image = ui .. 'preview2.webp' .. IMG_BUST },
+                { image = ui .. 'preview3.webp' .. IMG_BUST },
+                { image = ui .. 'preview4.webp' .. IMG_BUST },
+                { image = ui .. 'preview5.webp' .. IMG_BUST },
             },
         })
     end)
@@ -522,12 +553,16 @@ local function registerLbPhone()
         -- lb-phone builds the iframe src as:  ui:includes('http') ? ui : 'https://cfx-nui-'..ui
         -- so a bare 'ui/build/index.html' becomes 'https://cfx-nui-ui/build/index.html'
         -- (resource 'ui' -> 404 -> white iframe). We MUST pass the full cfx-nui URL.
-        ui          = ui .. 'index.html' .. CACHE_BUST,
+        ui          = urlInterface(),
         icon        = ui .. 'icon.png' .. IMG_BUST,
+        -- lb-phone shows ONLY the images, with no text beside them: that is
+        -- why each screenshot carries its title on it.
         images      = {
             ui .. 'preview1.webp' .. IMG_BUST,
             ui .. 'preview2.webp' .. IMG_BUST,
             ui .. 'preview3.webp' .. IMG_BUST,
+            ui .. 'preview4.webp' .. IMG_BUST,
+            ui .. 'preview5.webp' .. IMG_BUST,
         },
         -- lb-phone expects a size in KB (Quasar wanted it in MB).
         size        = app.sizeMb and math.floor(app.sizeMb * 1024) or nil,

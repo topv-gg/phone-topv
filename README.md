@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://topv.gg/app">
+    <img src=".github/assets/banner.webp" alt="TopV Social - download on iOS or Android, in the game and on your phone" width="100%">
+  </a>
+</p>
+
 # phone-topv, TopV Social
 
 **[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://github.com/topv-gg/phone-topv/releases/latest/download/phone-topv.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **iOS** (in review)
@@ -7,6 +13,19 @@ In-game client for **[topv.gg](https://topv.gg)**, the cross-server RP social ne
 sync, and **only in-character content** is ever shown in game.
 
 Runs as a custom app on **qs-smartphone** or **lb-phone**, whichever one your server has started.
+Phones that speak the Quasar bridge work too, with nothing to change on our side.
+
+<table>
+  <tr>
+    <td width="25%"><img src="ui/public/preview1.webp" alt="Server walls torn down: two characters on different servers talking to each other"></td>
+    <td width="25%"><img src="ui/public/preview2.webp" alt="The role bleeds into reality: the character stays alive 24/7, even with the game closed"></td>
+    <td width="25%"><img src="ui/public/preview3.webp" alt="The largest social network for FiveM: feed, in-character reactions, comments"></td>
+    <td width="25%"><img src="ui/public/preview5.webp" alt="One network, infinite worlds: notifications and messages across every server"></td>
+  </tr>
+</table>
+
+<sub>These are the screenshots the phone's App Store shows. They ship with the resource, in
+<code>ui/public/</code>.</sub>
 
 ---
 
@@ -35,21 +54,29 @@ Runs as a custom app on **qs-smartphone** or **lb-phone**, whichever one your se
 3. Start the server. That's it: the resource registers your server on topv.gg by itself and stores
    its own key. Nothing to create, nothing to paste.
 
-> ### 📌 Keep `topv-autokey.json`, and note where it is
+The folder can be renamed. Up to 1.2.0 a renamed folder silently broke the Medal screen, because the
+resource name was written by hand in one place. It is read from the game now, so any name works.
+
+> ### 📌 Keep `topv_autokey.json`, and never pass it on
 >
-> It sits **next to this resource folder, not inside it** (`resources/topv-autokey.json`, alongside
-> `phone-topv/`). That is deliberate: the key is then never part of what gets copied, zipped or
-> re-shared when someone passes the resource on. Servers used to end up sharing one key exactly that
-> way, and topv.gg saw them as a single server.
+> It sits **inside this resource folder** (`phone-topv/topv_autokey.json`).
+>
+> Versions 1.0.1 to 1.2.0 kept it one level out, next to the folder. That only ever worked on
+> Windows: on Linux, FiveM reports the write as successful but the file is not flushed until the
+> server shuts down, and reading it back always returned nothing. Those servers lost their identity
+> on every restart. Inside the folder, the same write and the same read work on both systems.
 >
 > The file holds your server's key **and its install id**. The id is what tells topv.gg your server
 > apart from every other one, including servers sharing your IP on the same host.
 >
-> **Delete it and your server comes back as a brand-new listing**, leaving the old one orphaned on the
-> site. Back it up with the rest of your server files.
+> **If you hand this resource to someone else, delete `topv_autokey.json` from the copy you give
+> them.** Two servers running the same key appear on topv.gg as one server.
 >
-> Updating from an earlier version? The resource moves the file out on its first start and says so in
-> the console. Same key, same listing, nothing to do.
+> **Delete it on your own server and you come back as a brand-new listing**, leaving the old one
+> orphaned on the site. Back it up with the rest of your server files.
+>
+> Updating from 1.2.0 or earlier? The resource brings the old file back inside on its first start and
+> says so in the console. Same key, same install id, same listing, nothing to do.
 
 ### If your server already has a claimed listing on topv.gg
 
@@ -79,9 +106,32 @@ posts, their own follows and their own notifications, and nothing links them pub
 The interface follows the phone's language. Ships with EN, ES, FR, DE, IT, PT, NL, PL, RU, TR, RO;
 anything else falls back to English.
 
-The translations are **compiled into the interface**, so dropping a file into `locales/` changes
-nothing on its own: the interface has to be rebuilt for it to be picked up. Ask us for a language
-and we will add it.
+The translations are **compiled into the interface** and live in `ui/src/locales/`. Dropping a file
+there changes nothing on its own: the interface has to be rebuilt for it to be picked up. Ask us for
+a language and we will add it.
+
+---
+
+## Medal clips
+
+Players can post their Medal clips on their character's profile, from the phone, without leaving
+the game.
+
+**My clips** sits in the phone's settings. It lists the player's Medal library with its thumbnails.
+Opening a clip gives a preview: they watch it, drag two handles to keep only the part that matters,
+write a caption, and post it. Screenshots are posted as photos.
+
+Nothing is re-encoded and no video file travels through us: the chosen excerpt is carried in the
+address, and the player's Medal token never leaves their own machine.
+
+Two conditions, both on the player's side: **Medal has to be running** on the same machine as the
+game, and the clip has to be **online at Medal**. A clip that is still uploading says so, and the
+screen opens by itself once it is ready.
+
+A player who does not have Medal is offered to install it. If you would like those installs to count
+for you, join Medal's affiliate programme through TopV
+([apply here](https://partners.dub.co/medal-tv/apply?via=topv)), then set your own link in
+`Config.Medal`.
 
 ---
 

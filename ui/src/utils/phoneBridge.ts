@@ -203,7 +203,10 @@ export async function getPhoneRuntime(): Promise<PhoneBridgeBundle> {
                 return createLbPhoneRuntime()
             }
 
-            // Otherwise: Quasar (qs-smartphone) — we load its bridge SDK.
+            // Otherwise: a host that speaks the Quasar bridge. That covers
+            // qs-smartphone AND Agency Phone / Agency Pad, which hand us the
+            // same `{ bridge, api }` through `QSPhoneBridge.create`.
+            //
             await ensureRuntimeLoaded()
             if (!window.QSPhoneBridge?.create) {
                 throw new Error('bridge_sdk_missing_create')

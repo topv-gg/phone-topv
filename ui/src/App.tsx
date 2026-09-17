@@ -43,6 +43,7 @@ import { StoryComposeScreen } from '@/screens/StoryComposeScreen'
 import { StoryViewer } from '@/screens/StoryViewer'
 import { SecureAccountScreen } from '@/screens/SecureAccountScreen'
 import { SettingsScreen } from '@/screens/SettingsScreen'
+import { MedalScreen } from '@/screens/MedalScreen'
 import { CoachSecure } from '@/components/CoachSecure'
 
 function Splash() {
@@ -153,6 +154,8 @@ function StackScreen({ route }: { route: Route }) {
             return <SecureAccountScreen />
         case 'settings':
             return <SettingsScreen />
+        case 'medal':
+            return <MedalScreen />
     }
 }
 

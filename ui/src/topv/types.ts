@@ -30,6 +30,12 @@ export type Post = {
     text: string
     imageUrls?: string[] | null
     embedUrl?: string | null
+    // ⭐ THE VIDEO, NOT THE PLAYER. The server fetches the mp4 Medal itself
+    // advertises and hands it over here. Without it we fell back to an
+    // `iframe` towards their page: a consent wall over the video, and a
+    // cropped image. Absent = not a Medal clip, or Medal changed shape.
+    embedVideoUrl?: string | null
+    embedPosterUrl?: string | null
     youtubeVideoId?: string | null
     hashtags?: string[] | null
     mentions?: string[] | null
@@ -228,6 +234,9 @@ export type Reel = {
     postId: string
     youtubeVideoId?: string | null
     embedUrl?: string | null
+    // The video resolved by the server (Medal), same as for a post.
+    embedVideoUrl?: string | null
+    embedPosterUrl?: string | null
     caption?: string | null
     createdAt: string
     characterId?: string | null
@@ -362,7 +371,7 @@ export type Conversation = {
     lastMessage?: ConversationLastMessage | null
     unreadCount: number
 
-    // ── Group thread (2026-07-25) ────────────────────────────────────────
+    // ── Group thread ─────────────────────────────────────────────────────
     // A group has no "other side": members live in their own list. Every
     // group field is optional so a one-to-one thread stays exactly what it was.
     isGroup?: boolean

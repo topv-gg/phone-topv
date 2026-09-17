@@ -43,6 +43,8 @@ function VideoFrame({ reel, active }: { reel: Reel; active: boolean }) {
         <PostVideo
             key={reel.postId}
             url={reel.embedUrl}
+            videoUrl={reel.embedVideoUrl}
+            poster={reel.embedPosterUrl}
             autoPlay
             controls={false}
             className="h-full w-full bg-black object-contain"
@@ -77,7 +79,10 @@ function ReelItem({
     const lastTap = useRef(0)
     const singleTimer = useRef<number | null>(null)
 
-    const tappable = !reel.youtubeVideoId && isSafeVideoUrl(reel.embedUrl) && isDirectVideoFile(reel.embedUrl)
+    const tappable =
+        !reel.youtubeVideoId &&
+        (isSafeVideoUrl(reel.embedVideoUrl) ||
+            (isSafeVideoUrl(reel.embedUrl) && isDirectVideoFile(reel.embedUrl)))
 
     useEffect(() => {
         // Leaving the screen (scroll): the video is unmounted, and so is the paused state.
