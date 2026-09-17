@@ -6,7 +6,7 @@
 
 # phone-topv, TopV Social
 
-**[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://github.com/topv-gg/phone-topv/releases/latest/download/phone-topv.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **iOS** (in review)
+**[The app page](https://topv.gg/app)** &nbsp;·&nbsp; **[Download the resource](https://github.com/topv-gg/phone-topv/releases/latest/download/phone-topv.zip)** &nbsp;·&nbsp; **[Android](https://play.google.com/store/apps/details?id=gg.topv.app)** &nbsp;·&nbsp; **[iOS](https://apps.apple.com/app/id6803716102)**
 
 In-game client for **[topv.gg](https://topv.gg)**, the cross-server RP social network. Characters live
 24/7: a post written on the website shows up on the in-game phone and the other way round, DMs stay in
@@ -113,6 +113,15 @@ a language and we will add it.
 ---
 
 ## Medal clips
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=8LvC0LO7wXA">
+    <img src=".github/assets/medal-video.webp" alt="Watch: TopV x Medal - clip with TopV Social" width="70%">
+  </a>
+  <br>
+  <sub><a href="https://www.youtube.com/watch?v=8LvC0LO7wXA"><b>Watch it work</b></a> - 
+  <a href="https://topv.gg/medal">the partnership, for server owners</a></sub>
+</p>
 
 Players can post their Medal clips on their character's profile, from the phone, without leaving
 the game.
