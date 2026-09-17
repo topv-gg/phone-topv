@@ -13,7 +13,9 @@ import { CameraIcon, CloseIcon, ImageIcon } from '@/components/icons'
 import { Spinner, TopBar } from '@/components/ui'
 import { EmojiPanel, EmojiToggle, insertAtCaret } from '@/components/EmojiPicker'
 
-const MAX_LEN = 1000
+// Meme longueur que sur le site et l'application mobile : ce qui s'ecrit
+// d'un cote doit pouvoir s'ecrire de l'autre.
+const MAX_LEN = 2000
 const MAX_IMAGES = 4
 
 // Cuts the text into pieces, in orange on the names of the characters mentioned. We

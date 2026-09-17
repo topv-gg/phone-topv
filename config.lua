@@ -141,10 +141,10 @@ Config.Push = {
 -- and burn the whole server's API budget. Values are generous, a human player
 -- never hits them.
 Config.Limits = {
-    postTextMax     = 1000,
-    storyCaptionMax = 200,
+    postTextMax     = 2000,
+    storyCaptionMax = 300,
     commentTextMax = 500,
-    dmTextMax      = 1000,
+    dmTextMax      = 2000,
     searchTextMax  = 64,
     maxImages      = 4,
     imageUrlMax    = 512,

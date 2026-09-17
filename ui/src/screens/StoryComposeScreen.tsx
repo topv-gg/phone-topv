@@ -9,7 +9,7 @@ import { RichText } from '@/components/RichText'
 import type { AccountRow } from '@/topv/types'
 import { EmojiPanel, EmojiToggle, insertAtCaret } from '@/components/EmojiPicker'
 
-const MAX_CAPTION = 200
+const MAX_CAPTION = 300
 
 export function StoryComposeScreen({ imageUrl, mediaType }: { imageUrl: string; mediaType?: 'image' | 'video' }) {
     const nav = useNav()

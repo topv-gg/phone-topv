@@ -114,7 +114,7 @@ function harvestAvatars(value: unknown): void {
  * To be changed on every publication. It is a string, not a computed date: it has
  * to be frozen into the build.
  */
-export const UI_BUILD = '2026-09-17-154503'
+export const UI_BUILD = '2026-09-17-192842'
 
 async function call<T>(action: string, payload?: Record<string, unknown>): Promise<ApiResult<T>> {
     try {

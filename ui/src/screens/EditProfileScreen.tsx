@@ -19,7 +19,6 @@ const SUBTITLE_MAX = 120
 const TAG_MAX = 40
 const MAX_TAGS = 8
 
-const ACCENTS = ['#5b6470', '#4f7cac', '#3f9b7a', '#b08d57', '#9c6b8e', '#a6564f', '#6c6f92', '#8a8f5c']
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
     return (
@@ -45,7 +44,6 @@ export function EditProfileScreen() {
     const [subtitle, setSubtitle] = useState(activeCharacter?.subtitle ?? '')
     const [story, setStory] = useState(activeCharacter?.story ?? '')
     const [tags, setTags] = useState<string[]>(activeCharacter?.tags ?? [])
-    const [color, setColor] = useState(activeCharacter?.color ?? '')
     const [tagDraft, setTagDraft] = useState('')
     const [saving, setSaving] = useState(false)
     const [pickTarget, setPickTarget] = useState<null | 'avatar' | 'cover'>(null)
@@ -57,7 +55,6 @@ export function EditProfileScreen() {
         subtitle: activeCharacter?.subtitle ?? '',
         story: activeCharacter?.story ?? '',
         tags: activeCharacter?.tags ?? [],
-        color: activeCharacter?.color ?? '',
     })
 
     const name = session?.characterName ?? '?'
@@ -122,7 +119,9 @@ export function EditProfileScreen() {
         if (role.trim() !== init.role) patch.role = role.trim()
         if (subtitle.trim() !== init.subtitle) patch.subtitle = subtitle.trim()
         if (story.trim() !== init.story) patch.story = story.trim()
-        if (color !== init.color) patch.color = color
+    // ⚠️ LA COULEUR NE SE CHOISIT PLUS ICI. Elle depend de Social+, et cette
+    // regle vit sur le site : proposer le choix en jeu revenait a laisser
+    // esperer une teinte que le site pouvait refuser sans le dire.
         if (JSON.stringify(tags) !== JSON.stringify(init.tags)) patch.tags = tags
 
         if (Object.keys(patch).length === 0) {
@@ -325,28 +324,6 @@ export function EditProfileScreen() {
                         )}
                     </Field>
 
-                    <Field label={t('edit.accent')}>
-                        <div className="flex flex-wrap gap-2">
-                            {ACCENTS.map((c) => {
-                                const active = color.toLowerCase() === c.toLowerCase()
-                                return (
-                                    <button
-                                        key={c}
-                                        type="button"
-                                        onClick={() => setColor(active ? '' : c)}
-                                        className={classNames(
-                                            'h-8 w-8 rounded-full transition',
-                                            active
-                                                ? 'ring-2 ring-zinc-900 ring-offset-2 ring-offset-white dark:ring-zinc-100 dark:ring-offset-zinc-950'
-                                                : 'ring-1 ring-inset ring-black/10',
-                                        )}
-                                        style={{ backgroundColor: c }}
-                                        aria-label={c}
-                                    />
-                                )
-                            })}
-                        </div>
-                    </Field>
                 </div>
 
                 <div className="h-8" />

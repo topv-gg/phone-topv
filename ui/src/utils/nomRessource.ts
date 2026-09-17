@@ -44,6 +44,16 @@ export function nomDeLaRessource(): string {
 
     // 3. The historical fallback. Correct for everyone today; irrelevant as
     //    soon as the resource is up to date.
-    resolu = 'phone-topv'
-    return resolu
+    //
+    // 🔴 IT IS RETURNED, NEVER REMEMBERED. Caching it cost every action in the
+    // app: `medal.ts` asked for the name while the module was loading, before
+    // the host phone had injected `GetParentResourceName` - lb-phone does that
+    // from the iframe's `load` handler, which fires after we have mounted (see
+    // `phoneBridge.ts`). The fallback was then frozen for the whole session,
+    // and on a renamed folder every call went to an address that does not
+    // exist: "Action failed, try again" everywhere, no typing, and Medal
+    // waiting out its timeout.
+    // Leaving it uncached costs one test per call, and lets the very next call
+    // pick up the real name the moment the game offers it.
+    return 'phone-topv'
 }

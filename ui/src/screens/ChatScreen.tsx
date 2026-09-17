@@ -1459,7 +1459,7 @@ export function ChatScreen({
                 <input
                     ref={draftRef}
                     value={draft}
-                    maxLength={1000}
+                    maxLength={2000}
                     disabled={blocked}
                     onChange={(e) => {
                         setDraft(e.target.value)

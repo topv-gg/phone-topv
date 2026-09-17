@@ -34,13 +34,17 @@ import { nomDeLaRessource } from '@/utils/nomRessource'
 // forced every server to keep the folder named `phone-topv`. The relay page
 // loads from `cfx-nui-<name>/`, so a renamed folder produced an address that
 // does not exist, and Medal quietly stopped working.
-const RESSOURCE = nomDeLaRessource()
+// ⚠️ RESOLU A L'USAGE, PAS AU CHARGEMENT. Au chargement du module, le
+// telephone hote n'a pas encore forcement injecte ses fonctions, et on
+// figeait alors le repli pour toute la session.
+const ressource = () => nomDeLaRessource()
 // ⚠️ THE CACHE-BUSTING TOKEN IS ESSENTIAL HERE. Without it the game browser
 // kept the old relay page forever: a fix shipped inside the resource NEVER
 // reached anyone, not even after `restart phone-topv`, and the stale page
 // carried an expired Medal session. `location.search` carries the token the
 // game renews on every (re)registration of the app, same as for images.
-const RELAIS = `https://cfx-nui-${RESSOURCE}/ui/build/medal.html${typeof location !== 'undefined' ? location.search : ''}`
+const relais = () =>
+    `https://cfx-nui-${ressource()}/ui/build/medal.html${typeof location !== 'undefined' ? location.search : ''}`
 
 /** Past this, we consider the relay page is not there. */
 const DELAI_MS = 6000
@@ -74,7 +78,7 @@ function preparerCadre(): Promise<boolean> {
         el.setAttribute('aria-hidden', 'true')
         el.setAttribute('tabindex', '-1')
         el.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none'
-        el.src = RELAIS
+        el.src = relais()
 
         let repondu = false
         const fini = (ok: boolean) => {
