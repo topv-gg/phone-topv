@@ -544,20 +544,28 @@ local function registerLbPhone()
     refreshCacheBust()   -- fresh token so a re-register loads the latest build
     local app = Config.App
     local added, reason = exports['lb-phone']:AddCustomApp({
-        identifier  = app.id,
-        name        = app.label,
+        identifier   = app.id,
+        name         = app.label,
         -- Short one-liner for lb-phone's compact listing; falls back to the long
         -- Quasar text if it is ever removed from the config.
-        description = app.descriptionLb or app.description,
-        developer   = app.creator,
+        description  = app.descriptionLb or app.description,
+        developer    = app.creator,
+        -- WITHOUT THIS FIELD THE APP OPENS BUT NEVER RECEIVES THE KEYBOARD.
+        -- lb-phone injects a script into the app's frame which tells the game to
+        -- release the keyboard as soon as a text field takes focus (`toggleInput`).
+        -- That whole injection sits behind `if (t.resourceName)`: with no name,
+        -- lb-phone writes nothing at all, the mouse keeps working and every
+        -- keystroke stays with the game (lb-phone ships `Config.KeepInput = true`).
+        -- The Quasar equivalent is `sourceResource`, passed above.
+        resourceName = GetCurrentResourceName(),
         -- lb-phone builds the iframe src as:  ui:includes('http') ? ui : 'https://cfx-nui-'..ui
         -- so a bare 'ui/build/index.html' becomes 'https://cfx-nui-ui/build/index.html'
         -- (resource 'ui' -> 404 -> white iframe). We MUST pass the full cfx-nui URL.
-        ui          = urlInterface(),
-        icon        = ui .. 'icon.png' .. IMG_BUST,
+        ui           = urlInterface(),
+        icon         = ui .. 'icon.png' .. IMG_BUST,
         -- lb-phone shows ONLY the images, with no text beside them: that is
         -- why each screenshot carries its title on it.
-        images      = {
+        images       = {
             ui .. 'preview1.webp' .. IMG_BUST,
             ui .. 'preview2.webp' .. IMG_BUST,
             ui .. 'preview3.webp' .. IMG_BUST,
@@ -565,10 +573,10 @@ local function registerLbPhone()
             ui .. 'preview5.webp' .. IMG_BUST,
         },
         -- lb-phone expects a size in KB (Quasar wanted it in MB).
-        size        = app.sizeMb and math.floor(app.sizeMb * 1024) or nil,
-        price       = app.price,
+        size         = app.sizeMb and math.floor(app.sizeMb * 1024) or nil,
+        price        = app.price,
         -- Fixes iframe blur on some setups (requires em/rem in CSS).
-        fixBlur     = true,
+        fixBlur      = true,
     })
     if not added then
         print(('[phone-topv] lb-phone AddCustomApp failed: %s'):format(reason or 'unknown'))
