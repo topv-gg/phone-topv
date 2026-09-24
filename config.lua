@@ -28,7 +28,12 @@ Config.App = {
     appStoreOnly = false, -- false = the app sits on the phone home screen from the start. true = it only exists in the App Store, and each player has to find and install it there.
     price        = 0,
     sizeMb       = 2,
-    version      = '1.1.0',
+    -- Read from fxmanifest.lua, nothing to change here. The version used to be
+    -- written in both files and the two had drifted apart.
+    version      = (function()
+        local v = GetResourceMetadata(GetCurrentResourceName(), 'version', 0)
+        return (v and v ~= '') and v or '0.0.0'
+    end)(),
     whatsNew     = 'Now on your home screen from the start, with no download needed. Posts can also be relayed to a Discord channel of your choice.',
 }
 

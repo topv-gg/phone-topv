@@ -72,8 +72,27 @@ resource name was written by hand in one place. It is read from the game now, so
 > **If you hand this resource to someone else, delete `topv_autokey.json` from the copy you give
 > them.** Two servers running the same key appear on topv.gg as one server.
 >
-> **Delete it on your own server and you come back as a brand-new listing**, leaving the old one
-> orphaned on the site. Back it up with the rest of your server files.
+> Since 1.3.5 a second copy of the same identity is kept in the server's own storage (the `db`
+> folder of your server data, not the resource). Once your server has started on 1.3.5, replacing the
+> resource folder, or a panel that re-downloads it on every start, no longer costs you your listing:
+> the file is rebuilt from that copy and the console says so. Two conditions:
+>
+> - **for this update, carry `topv_autokey.json` over into the new folder one last time**, since the
+>   copy only exists from the first start on 1.3.5;
+> - **keep the same folder name (`phone-topv`), in the same place.** The copy is stored under that
+>   name, and it is only trusted by a resource sitting where it was saved. GitHub's "Source code"
+>   archive unpacks as `phone-topv-1.3.5`, so rename it, or use `phone-topv.zip`.
+>
+> **So deleting the file no longer resets anything.** To start over under a new identity, for
+> example on a server you copied from another one, type this in the server console:
+>
+> ```
+> topv newidentity confirm
+> ```
+>
+> A copy of your whole server started from another folder, or on another port, without
+> `topv_autokey.json`, notices on its own that the stored identity is not its own and starts a new
+> one. If the file came along with the copy, the console warns you: run the command above on the copy.
 >
 > Updating from 1.2.0 or earlier? The resource brings the old file back inside on its first start and
 > says so in the console. Same key, same install id, same listing, nothing to do.

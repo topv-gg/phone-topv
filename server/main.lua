@@ -58,6 +58,10 @@ local AUTO_KEY_FILE_OUTSIDE = '../topv-autokey.json'
 -- started posting under its name.
 local INSTALL_ID   = ''
 local AUTO_KEY_SLUG = nil
+-- Where the install id came from: 'file', 'old-file', 'storage', 'new',
+-- 'elsewhere', 'reset' or 'recovery'. Sent at registration, so topv.gg can
+-- count how many servers really keep their identity instead of guessing.
+local ID_SOURCE     = 'file'
 
 -- Did the key come from the `topv_api_key` convar, i.e. a deliberate choice
 -- by the owner? If so we never touch it: automatic recovery must not wipe a
@@ -65,36 +69,101 @@ local AUTO_KEY_SLUG = nil
 -- that is not theirs.
 local KEY_FROM_CONVAR = API_KEY ~= ''
 
--- djb2 mix: turns a string into a number. Used to fold the licence key
--- (unique per server owner) into the random seed, so that two servers
--- started in the very same millisecond still diverge.
-local function mixString(str, seed)
-    local h = seed or 5381
-    for i = 1, #str do
-        h = ((h * 33) + str:byte(i)) % 2147483647
+-- ── SHA-256, compact ──────────────────────────────────────────────────────
+-- Makes the install id and the install home below. Verified inside FXServer
+-- itself against the official test vectors (empty, "abc", the 56-byte one)
+-- and against 1000 x "a".
+local SHA_K <const> = {
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2,
+}
+local SHA_M <const> = 0xffffffff
+local function shaRotr(x, n) return ((x >> n) | (x << (32 - n))) & SHA_M end
+
+local function sha256(msg)
+    local h = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19}
+    local len = #msg
+    msg = msg .. string.char(128) .. string.rep(string.char(0), (55 - len) % 64)
+        .. string.pack('>I8', len * 8)
+    for bloc = 1, #msg, 64 do
+        local w = {}
+        for i = 0, 15 do w[i] = string.unpack('>I4', msg, bloc + i * 4) end
+        for i = 16, 63 do
+            local x, y = w[i-15], w[i-2]
+            local s0 = shaRotr(x,7) ~ shaRotr(x,18) ~ (x >> 3)
+            local s1 = shaRotr(y,17) ~ shaRotr(y,19) ~ (y >> 10)
+            w[i] = (w[i-16] + s0 + w[i-7] + s1) & SHA_M
+        end
+        local a,b,c,d,e,f,g,hh = h[1],h[2],h[3],h[4],h[5],h[6],h[7],h[8]
+        for i = 0, 63 do
+            local S1 = shaRotr(e,6) ~ shaRotr(e,11) ~ shaRotr(e,25)
+            local ch = (e & f) ~ ((~e & SHA_M) & g)
+            local t1 = (hh + S1 + ch + SHA_K[i+1] + w[i]) & SHA_M
+            local S0 = shaRotr(a,2) ~ shaRotr(a,13) ~ shaRotr(a,22)
+            local mj = (a & b) ~ (a & c) ~ (b & c)
+            local t2 = (S0 + mj) & SHA_M
+            hh,g,f,e,d,c,b,a = g,f,e,(d + t1) & SHA_M, c,b,a,(t1 + t2) & SHA_M
+        end
+        local n = {a,b,c,d,e,f,g,hh}
+        for i = 1, 8 do h[i] = (h[i] + n[i]) & SHA_M end
     end
-    return h
+    local out = {}
+    for i = 1, 8 do out[i] = ('%08x'):format(h[i]) end
+    return table.concat(out)
 end
 
+-- A fresh install id. It used to come from a 31-bit seed (clock, timer, a
+-- few settings), and servers left in their default configuration restarting
+-- on the hour could draw the same one. Everything now goes through SHA-256,
+-- including the address of a fresh table, which differs between processes.
 local function generateInstallId()
-    -- Combined sources: wall clock, game timer, licence key, hostname and port.
-    -- None is reliable on its own; together they put a collision between two
-    -- distinct servers out of reach.
-    local graine = mixString(
-        tostring(GetConvar('sv_licenseKey', '')) .. '|' ..
-        tostring(GetConvar('sv_hostname', '')) .. '|' ..
-        tostring(GetConvar('endpoint_add_tcp', '')) .. '|' ..
-        tostring(GetConvarInt('sv_maxclients', 0)),
-        (os.time() % 2147483647) + GetGameTimer()
-    )
-    math.randomseed(graine)
-    -- Burn the first draws: on some Lua implementations the values right after
-    -- a randomseed stay correlated with the seed itself.
-    for _ = 1, 8 do math.random() end
+    local ok, id = pcall(function()
+        return sha256(table.concat({
+            tostring({}), tostring(os.clock()), tostring(os.time()),
+            tostring(GetGameTimer()), tostring(GetConvar('sv_hostname', '')),
+            tostring(GetConvarInt('netPort', 0)), tostring(GetResourcePath(RESOURCE) or ''),
+            tostring(math.random()), tostring(math.random()),
+        }, '|')):sub(1, 32)
+    end)
+    if ok and id then return id end
     local out = {}
     for i = 1, 32 do out[i] = ('%x'):format(math.random(0, 15)) end
     return table.concat(out)
 end
+
+-- WHERE THIS COPY RUNS: the listening port and the resource's folder, saved
+-- with the identity and checked before the server storage is trusted.
+--
+-- The storage lives in the server's `db` folder. Copy a whole server to make
+-- a second one and that folder comes along: without this check the copy
+-- would take the original's identity, and the two would keep revoking each
+-- other's key. A copy on the same machine sits in another folder; one on a
+-- shared host usually listens on another port.
+--
+-- `netPort` and not `endpoint_add_tcp`: the latter is a command, not a
+-- variable, and reads as nothing. Checked inside FXServer.
+local function installHome()
+    local ok, home = pcall(function()
+        return sha256('topv-home-v1|' .. GetConvarInt('netPort', 0) .. '|'
+            .. tostring(GetResourcePath(RESOURCE) or '')):sub(1, 16)
+    end)
+    if ok then return home end
+    return nil
+end
+local HOME = installHome()
+
+-- Set by `topv newidentity`, or when the stored identity belongs to a server
+-- installed elsewhere, and kept until the next registration succeeds: topv.gg
+-- then creates a new listing instead of handing back the old one.
+local RESET_PENDING = false
+
+local KEY_FILE_NOTE = 'TopV key generated automatically. DO NOT SHARE. Keep it with your server files. A copy also lives in the server\'s own storage, so deleting this file does not reset anything: to start over under a new identity, type "topv newidentity confirm" in the server console.'
 
 -- Writes the key file while KEEPING what is already there: the install id
 -- must survive getting a new key, otherwise the server would lose its
@@ -106,18 +175,62 @@ local function autoKeyPayload()
         apiKey    = (not KEY_FROM_CONVAR) and API_KEY ~= '' and API_KEY or nil,
         slug      = AUTO_KEY_SLUG,
         installId = INSTALL_ID ~= '' and INSTALL_ID or nil,
-        note      = 'TopV key generated automatically — DO NOT SHARE. It lives NEXT TO the resource folder, never inside it, so that copying or re-zipping phone-topv cannot carry a key to another server. Deleting this file forces a re-registration under a NEW identity.',
+        -- Where this copy runs and when it was saved: both are read back when
+        -- choosing between the file and the server storage (see below).
+        home      = HOME,
+        savedAt   = os.time(),
+        fresh     = RESET_PENDING or nil,
+        note      = KEY_FILE_NOTE,
     })
 end
 
--- Writes the key next to the resource's own files.
+-- SECOND COPY OF THE IDENTITY, OUTSIDE THIS FOLDER.
 --
--- No read-back any more. It existed to prove the write had landed OUTSIDE the
--- folder, which could silently fail. Inside the folder that check answers a
--- question nobody is asking: the control test showed this path reads back
--- fine on both Linux and Windows.
+-- The file alone was not enough. Servers kept coming back as a brand-new
+-- listing after an ordinary scheduled restart, and they share one trait: the
+-- resource folder does not survive. Panels that re-download resources on
+-- start, owners who update by deleting the folder and unzipping the new one,
+-- folders the server process may not write into.
+--
+-- FiveM's key-value store lives in the server's `db` folder, not in the
+-- resource. Checked inside FXServer: a value written there is read back after
+-- the process is killed outright. It is stored under this resource's NAME:
+-- keep the same folder name when you update, or the copy is not found.
+--
+-- Guarded: a server on an artifact without server-side KVP must still start.
+local IDENTITY_KVP = 'topv_identity'
+
+local function kvpAvailable()
+    return type(SetResourceKvp) == 'function' and type(GetResourceKvpString) == 'function'
+end
+
+local function readIdentityKvp()
+    if not kvpAvailable() then return nil end
+    local ok, raw = pcall(GetResourceKvpString, IDENTITY_KVP)
+    if ok and type(raw) == 'string' then return raw end
+    return nil
+end
+
+local warnedUnwritable = false
+
+-- Writes both copies. The file is kept because it is the one an owner can see,
+-- back up and move by hand.
 local function saveAutoKeyFile()
-    SaveResourceFile(RESOURCE, AUTO_KEY_FILE, autoKeyPayload(), -1)
+    local payload = autoKeyPayload()
+    local written = SaveResourceFile(RESOURCE, AUTO_KEY_FILE, payload, -1)
+    local kept = false
+    if kvpAvailable() then
+        kept = pcall(SetResourceKvp, IDENTITY_KVP, payload)
+    end
+    -- Said once, and plainly: a folder that refuses the write is exactly what
+    -- used to turn every restart into a new listing.
+    if written == false and not warnedUnwritable then
+        warnedUnwritable = true
+        print(('^3[%s]^7 could not write %s in the resource folder (read-only?).%s'):format(
+            RESOURCE, AUTO_KEY_FILE, kept
+                and ' The identity is kept in the server storage instead: nothing to do.'
+                or ' This server will come back as a new listing after each restart.'))
+    end
 end
 
 do
@@ -151,43 +264,122 @@ do
 
     local inside,  insideId,  insideKey  = readIdentity(LoadResourceFile(RESOURCE, AUTO_KEY_FILE))
     local outside, outsideId, outsideKey = readIdentity(LoadResourceFile(RESOURCE, AUTO_KEY_FILE_OUTSIDE))
+    local stored,  storedId,  storedKey  = readIdentity(readIdentityKvp())
+
+    -- The server storage is only trusted by the copy that wrote it (see
+    -- installHome). A copy of a whole server brings the storage along, and
+    -- must not come back as the original.
+    local storedElsewhere = false
+    if stored ~= nil and (HOME == nil or stored.home ~= HOME) then
+        stored, storedId, storedKey = nil, false, false
+        storedElsewhere = true
+    end
+
     local data, hasId, hasKey = inside, insideId, insideKey
     if data == nil then
         data, hasId, hasKey = outside, outsideId, outsideKey
+        ID_SOURCE = 'old-file'
     end
-    -- Bring it back home, once: an identity out there, none in here yet.
-    local mustBringBack = (inside == nil) and (outside ~= nil)
+    -- The server storage comes last: the file is what the owner sees and may
+    -- have replaced by hand, so when both exist the file wins.
+    if data == nil then
+        data, hasId, hasKey = stored, storedId, storedKey
+        ID_SOURCE = 'storage'
+    end
+    -- ...unless both carry the SAME install id, the storage holds a DIFFERENT
+    -- key and it was saved later. That happens when the folder refuses writes
+    -- and still holds an old file: the key renewed since then only reached the
+    -- storage. Keeping the old file would mean three refusals and a
+    -- re-registration on every start.
+    -- The key has to differ: the storage is rewritten on every start, so it is
+    -- almost always the more recent of the two. On the date alone, the file
+    -- would be rewritten every other start for nothing.
+    local storageIsNewer = inside ~= nil and stored ~= nil and insideId and storedId
+        and storedKey and inside.installId:lower() == stored.installId:lower()
+        and stored.apiKey ~= inside.apiKey
+        and (tonumber(stored.savedAt) or 0) > (tonumber(inside.savedAt) or 0)
+    if storageIsNewer then
+        data, hasId, hasKey = stored, storedId, storedKey
+        ID_SOURCE = 'storage'
+    end
+
     if data then
         if hasId then
             INSTALL_ID = data.installId:lower()
         end
         AUTO_KEY_SLUG = data.slug
+        RESET_PENDING = data.fresh == true
+        if RESET_PENDING then ID_SOURCE = 'reset' end
         -- The stored key is only used when none was provided by hand.
         if API_KEY == '' and hasKey then
             API_KEY = data.apiKey
             print(('^2[%s]^7 auto-generated key loaded (listing: %s)'):format(RESOURCE, tostring(data.slug)))
         end
     end
-    -- Bring it back home, once. Same key, same install id, same listing: a
-    -- move, never a reset.
-    --
-    -- ⚠️ The old file outside is NOT cleared. FiveM cannot delete a file, and
-    -- blanking it means writing outside — which on Linux only lands when the
-    -- server shuts down. It harms nobody where it is, and it stays as a safety
-    -- net for anyone rolling back.
-    if mustBringBack and (API_KEY ~= '' or INSTALL_ID ~= '') then
-        saveAutoKeyFile()
-        -- `print` and not `warn`: warn is declared further down this file.
-        print(('^2[%s]^7 key brought back into the resource folder (now %s) — same key, same listing.')
+
+    -- A file saved somewhere else came along with a copy of the whole server.
+    -- It is not refused (the file stays what the owner decides), but a copy
+    -- running under the original's identity would take its listing: say it.
+    -- Said ONCE: the file is then rewritten with this location. A server that
+    -- was only moved must not be nagged on every start, with no way to make
+    -- it stop short of giving up its listing.
+    local savedElsewhere = inside ~= nil and type(inside.home) == 'string'
+        and HOME ~= nil and inside.home ~= HOME
+    if savedElsewhere then
+        print(('^3[%s]^7 %s was saved by a server installed somewhere else (another folder or port). If this server is a copy of another one, type "topv newidentity confirm" in this console, or both will share one TopV listing.')
             :format(RESOURCE, AUTO_KEY_FILE))
     end
+
+    -- Rewrite the file when it is missing, out of date, or still carries the
+    -- note of an older version (which told owners that deleting it resets the
+    -- identity, no longer true). Same key, same install id, same listing.
+    --
+    -- ⚠️ The old file outside is NOT cleared. FiveM cannot delete a file, and
+    -- blanking it means writing outside, which on Linux only lands when the
+    -- server shuts down. It harms nobody where it is, and it stays as a safety
+    -- net for anyone rolling back.
+    local fileOutdated = inside == nil or storageIsNewer or savedElsewhere
+        or inside.note ~= KEY_FILE_NOTE
+    if data ~= nil and fileOutdated and (API_KEY ~= '' or INSTALL_ID ~= '') then
+        saveAutoKeyFile()
+        -- `print` and not `warn`: warn is declared further down this file.
+        if inside == nil and ID_SOURCE == 'storage' then
+            print(('^2[%s]^7 %s was missing: identity restored from the server storage. Same key, same listing.')
+                :format(RESOURCE, AUTO_KEY_FILE))
+        elseif inside == nil then
+            print(('^2[%s]^7 key brought back into the resource folder (now %s). Same key, same listing.')
+                :format(RESOURCE, AUTO_KEY_FILE))
+        end
+    elseif data ~= nil and kvpAvailable() then
+        -- Keeps the second copy in step with the file: one small write per
+        -- start, and it can never drift. The file itself is left alone.
+        pcall(SetResourceKvp, IDENTITY_KVP, autoKeyPayload())
+    end
+
     if INSTALL_ID == '' then
+        ID_SOURCE = 'new'
         INSTALL_ID = generateInstallId()
+        if storedElsewhere then
+            -- Refusing the stored identity is not enough: a copy on the same
+            -- host often keeps the same name and the same address, and topv.gg
+            -- would hand it the original's listing by those. Say so, exactly
+            -- as `topv newidentity` does.
+            ID_SOURCE     = 'elsewhere'
+            RESET_PENDING = true
+        end
         -- Written IMMEDIATELY, before any registration: if registration fails and
-        -- the server restarts, it must come back with the SAME id — otherwise it
+        -- the server restarts, it must come back with the SAME id. Otherwise it
         -- creates a duplicate sheet on every attempt.
         saveAutoKeyFile()
-        print(('^2[%s]^7 install id generated: %s…'):format(RESOURCE, INSTALL_ID:sub(1, 12)))
+        -- Worded apart from the restore messages above, so that an owner (and
+        -- anyone helping them) can tell a real first start from a lost identity.
+        if storedElsewhere then
+            print(('^3[%s]^7 new install id %s…: the server storage holds the identity of a server installed somewhere else (a copy of this one?), so it was not reused.')
+                :format(RESOURCE, INSTALL_ID:sub(1, 12)))
+        else
+            print(('^2[%s]^7 new install id %s… (no saved identity found: first start, or both copies were lost)')
+                :format(RESOURCE, INSTALL_ID:sub(1, 12)))
+        end
     end
 end
 
@@ -247,6 +439,8 @@ local function noteUnauthorized()
     warn('key refused %d times in a row — re-registering automatically (the install id keeps the existing listing).',
         UNAUTHORIZED_BEFORE_RETRY)
     API_KEY = ''
+    -- Counted apart: this registration does not say how the server started.
+    if not RESET_PENDING then ID_SOURCE = 'recovery' end
     saveAutoKeyFile()
     -- Attempt counter reset HERE and nowhere else: recovery is a rare event,
     -- spaced at least an hour apart.
@@ -669,6 +863,9 @@ tryAutoRegister = function()
         API_KEY = data.apiKey
         AUTO_KEY_SLUG = data.slug
         unauthorizedStreak = 0
+        -- A requested new identity now has its own listing: the next
+        -- registration may hand this one back like any other.
+        RESET_PENDING = false
         -- Goes through saveAutoKeyFile so the install id is NOT wiped: the
         -- original direct write removed it, and the server lost its identity
         -- every time its key was renewed.
@@ -690,6 +887,7 @@ tryAutoRegister = function()
     end, 'POST', json.encode({
         name            = name,
         installId       = INSTALL_ID,
+        idSource        = ID_SOURCE,
         description     = desc,
         maxClients      = GetConvarInt('sv_maxclients', 0),
         resourceVersion = Config.App.version,
@@ -781,6 +979,20 @@ local DIRECTIVES = {
     minVersion     = nil,
 }
 
+-- True when version `a` is strictly older than `b`, compared number by
+-- number. A plain inequality told a server that had just updated that it was
+-- out of date, every five minutes, as soon as the two strings differed.
+local function versionBelow(a, b)
+    local pa, pb = {}, {}
+    for n in tostring(a):gmatch('%d+') do pa[#pa + 1] = tonumber(n) end
+    for n in tostring(b):gmatch('%d+') do pb[#pb + 1] = tonumber(n) end
+    for i = 1, math.max(#pa, #pb) do
+        local x, y = pa[i] or 0, pb[i] or 0
+        if x ~= y then return x < y end
+    end
+    return false
+end
+
 local function applyDirectives(d)
     if type(d) ~= 'table' then return end
     local wasEnabled = DIRECTIVES.enabled
@@ -802,7 +1014,7 @@ local function applyDirectives(d)
         end
     end
 
-    if DIRECTIVES.minVersion and DIRECTIVES.minVersion ~= Config.App.version then
+    if DIRECTIVES.minVersion and versionBelow(Config.App.version, DIRECTIVES.minVersion) then
         warn(('a newer version of %s is available (%s > %s) — consider updating.')
             :format(RESOURCE, DIRECTIVES.minVersion, tostring(Config.App.version)))
     end
@@ -2444,7 +2656,34 @@ end)
 RegisterCommand('topv', function(src, args)
     if src ~= 0 then return end
     local sub = args[1] or 'status'
-    if sub == 'status' then
+    if sub == 'newidentity' then
+        -- The one way to start over, now that the identity has two copies and
+        -- deleting the file no longer resets it. Meant for a server copied from
+        -- another one, which must not take over the original's listing.
+        -- A key set by hand decides the listing on its own: a new install id
+        -- would change nothing, so say so instead of pretending.
+        if KEY_FROM_CONVAR then
+            print(('[%s] your key is set by hand (topv_api_key): it decides which listing this server posts to. To get a separate listing, remove that line from server.cfg, then run this command again.'):format(RESOURCE))
+            return
+        end
+        if args[2] ~= 'confirm' then
+            print(('[%s] this detaches the server from its current TopV listing and registers it as a new one. Type "topv newidentity confirm" to go ahead.'):format(RESOURCE))
+            return
+        end
+        INSTALL_ID    = generateInstallId()
+        ID_SOURCE     = 'reset'
+        AUTO_KEY_SLUG = nil
+        API_KEY       = ''
+        -- Kept in both copies until topv.gg has created the new listing, so
+        -- that a restart in between does not fall back onto the old one.
+        RESET_PENDING = true
+        saveAutoKeyFile()
+        print(('[%s] new identity %s… saved in both copies, registering it now.'):format(RESOURCE, INSTALL_ID:sub(1, 12)))
+        if tryAutoRegister then
+            registerAttempts = 0
+            tryAutoRegister()
+        end
+    elseif sub == 'status' then
         print(('[%s] configured=%s framework=%s slug=%s'):format(RESOURCE, tostring(isConfigured()), framework or '?', SERVER_SLUG))
         local n = 0
         for psrc, sess in pairs(sessions) do
