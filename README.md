@@ -27,6 +27,15 @@ Phones that speak the Quasar bridge work too, with nothing to change on our side
 <sub>These are the screenshots the phone's App Store shows. They ship with the resource, in
 <code>ui/public/</code>.</sub>
 
+<p align="center">
+  <a href="https://media.topv.gg/film/topv-social-film-2026-09-28-1080.mp4">
+    <img src=".github/assets/topv-social-film.webp" alt="Watch the TopV Social film (1:42)" width="80%">
+  </a>
+  <br>
+  <sub><a href="https://media.topv.gg/film/topv-social-film-2026-09-28-1080.mp4"><b>Watch the TopV Social film</b></a> (1:42) - 
+  <a href="https://topv.gg/app">or on the app page</a></sub>
+</p>
+
 ---
 
 ## Requirements
