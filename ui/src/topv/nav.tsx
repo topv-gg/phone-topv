@@ -6,7 +6,10 @@ export type TabName = 'feed' | 'explore' | 'alerts' | 'inbox'
 export type Route =
     // prefillMention: sharing a profile — we open the composer with a clickable
     // mention of the character already inserted.
-    | { name: 'compose'; prefillMention?: { characterId: string; name: string; username: string } }
+    // prefillText: another resource of the game (IppoGo) started a post; the
+    // player finishes it and publishes it themselves.
+    // source: the game app it came from (IppoGo), kept down to the post.
+    | { name: 'compose'; prefillMention?: { characterId: string; name: string; username: string }; prefillText?: string; source?: string; prefillImage?: string }
 
     // `commentId` — opened from a notification: we scroll to the relevant
     // comment and highlight it.

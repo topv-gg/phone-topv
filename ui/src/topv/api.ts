@@ -114,7 +114,7 @@ function harvestAvatars(value: unknown): void {
  * To be changed on every publication. It is a string, not a computed date: it has
  * to be frozen into the build.
  */
-export const UI_BUILD = '2026-09-17-192842'
+export const UI_BUILD = '2026-09-30-002119'
 
 async function call<T>(action: string, payload?: Record<string, unknown>): Promise<ApiResult<T>> {
     try {
@@ -169,6 +169,8 @@ export const createPost = (input: {
     // (not the player globally) and enriches the returned post with the
     // characterMentions sidecar the renderer needs.
     characterMentions?: string[]
+    // The game app the post was started from (IppoGo's share): a key only.
+    sourceApp?: string
 }) => call<Post>('post.create', input)
 
 /**

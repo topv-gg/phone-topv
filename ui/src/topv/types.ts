@@ -37,6 +37,8 @@ export type Post = {
     embedVideoUrl?: string | null
     embedPosterUrl?: string | null
     youtubeVideoId?: string | null
+    // The game app it was started from (IppoGo): its card under the text.
+    sourceApp?: string | null
     hashtags?: string[] | null
     mentions?: string[] | null
     // Sidecar for @-mentions that point at a specific character (Option B).

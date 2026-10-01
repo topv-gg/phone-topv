@@ -65,6 +65,7 @@
   "compose.gallery": "Galerie",
   "compose.gif": "GIF",
   "compose.placeholder": "Ce se întâmplă în oraș?",
+  "compose.imageFailed": "Imaginea nu a putut fi adăugată. Textul tău este încă aici.",
   "compose.publish": "Publică",
   "compose.published": "Postarea ta este live",
   "compose.publishing": "Se publică…",

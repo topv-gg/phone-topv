@@ -65,6 +65,7 @@
   "compose.gallery": "Galeri",
   "compose.gif": "GIF",
   "compose.placeholder": "Şehirde neler oluyor?",
+  "compose.imageFailed": "Görsel eklenemedi. Metnin hâlâ burada.",
   "compose.publish": "Paylaş",
   "compose.published": "Gönderin yayında",
   "compose.publishing": "Paylaşılıyor…",

@@ -65,6 +65,7 @@
   "compose.gallery": "Галерея",
   "compose.gif": "GIF",
   "compose.placeholder": "Что происходит в городе?",
+  "compose.imageFailed": "Не удалось добавить изображение. Твой текст сохранён.",
   "compose.publish": "Опубликовать",
   "compose.published": "Твой пост опубликован",
   "compose.publishing": "Публикация…",

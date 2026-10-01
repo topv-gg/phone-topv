@@ -6,6 +6,7 @@ import { t } from '@/topv/i18n'
 import { useNav } from '@/topv/nav'
 import { phoneToast, toastError } from '@/topv/toast'
 import { getPhoneBridgeApi } from '@/utils/phoneBridge'
+import { fetchNui } from '@/utils/fetchNui'
 import { useIsLbPhone } from '@/utils/useIsLbPhone'
 import type { AccountRow, Post } from '@/topv/types'
 import { Avatar } from '@/components/Avatar'
@@ -58,8 +59,20 @@ function highlightMentions(
 export function ComposeScreen({
     onPublished,
     prefillMention,
+    prefillText,
+    prefillImage,
+    sourceApp,
 }: {
     onPublished?: (post: Post) => void
+    // A post started by another resource of the game (IppoGo): the text is
+    // there, the player adds a photo or a Medal clip and publishes it.
+    prefillText?: string
+    // The game app the post was started from (IppoGo): TopV joins its card.
+    sourceApp?: string
+    // A picture that app made (Ippoke's card of the moment, phone-topv 1.3.7), as
+    // a data URI: hosted here, then joined to the post like a gallery photo. The
+    // player sees it, can remove it, and publishes themselves.
+    prefillImage?: string
     // Sharing a profile: we arrive with a CLICKABLE mention of the character
     // already in place (text "@Name" + the retained characterId, so the render
     // knows to link it to the right profile).
@@ -68,7 +81,7 @@ export function ComposeScreen({
     // Gates the lb-phone-only layout below; Quasar keeps its own.
     const lbPhone = useIsLbPhone()
     const nav = useNav()
-    const [text, setText] = useState(prefillMention ? `@${prefillMention.name} ` : '')
+    const [text, setText] = useState(prefillMention ? `@${prefillMention.name} ` : prefillText ?? '')
     const [images, setImages] = useState<string[]>([])
     // A single video per post — it's what makes it appear in Videos.
     const [video, setVideo] = useState<string | null>(null)
@@ -79,7 +92,9 @@ export function ComposeScreen({
 
     const hashtags = useMemo(() => extractHashtags(text), [text])
     const mentions = useMemo(() => extractMentions(text), [text])
-    const canPublish = !publishing && (text.trim().length > 0 || images.length > 0 || !!video)
+    // The app's picture while it is being hosted (a tile with a spinner).
+    const [hostingImage, setHostingImage] = useState(false)
+    const canPublish = !publishing && !hostingImage && (text.trim().length > 0 || images.length > 0 || !!video)
 
     // ── Mention autocomplete ────────────────────────────────────────────
     // The @ trigger opens a dropdown that queries /search and lets the
@@ -204,10 +219,40 @@ export function ComposeScreen({
         })
     }
 
+    // 30/09 : l'image venue d'une app n'a pas pu etre hebergee.
+    const [imageFailed, setImageFailed] = useState(false)
+
     const addImage = (url: string | undefined | null) => {
         if (!url) return
         setImages((prev) => (prev.includes(url) || prev.length >= MAX_IMAGES ? prev : [...prev, url]))
     }
+
+    // ⭐ THE PICTURE THE GAME APP MADE (Ippoke's card of the moment), hosted once
+    // when the composer opens. The server holds the key (NUI topv:uploadImage ->
+    // phone-topv:uploadImage -> topv.gg); a failure leaves the post with its text.
+    useEffect(() => {
+        if (!prefillImage) return
+        let alive = true
+        setHostingImage(true)
+        setImageFailed(false)
+        fetchNui<{ ok?: boolean; url?: string }>('topv:uploadImage', { image: prefillImage })
+            .then((res) => {
+                if (alive && res && res.ok && typeof res.url === 'string' && /^https?:\/\//.test(res.url)) addImage(res.url)
+                // 30/09 : l'echec se voit, il ne disparait plus en silence.
+                else if (alive) setImageFailed(true)
+            })
+            .catch(() => {
+                if (alive) setImageFailed(true)
+            })
+            .finally(() => {
+                if (alive) setHostingImage(false)
+            })
+        return () => {
+            alive = false
+        }
+        // Once per composer: the intent is taken once.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     // The phone's camera returns a PHOTO or a VIDEO. We used to look at `url`
     // while ignoring `type`: a video ended up stored among the images, and so
@@ -274,6 +319,7 @@ export function ComposeScreen({
             hashtags: hashtags.length > 0 ? hashtags : undefined,
             mentions: cleanMentions.length > 0 ? cleanMentions : undefined,
             characterMentions: liveCharIds.length > 0 ? liveCharIds : undefined,
+            sourceApp,
         })
         setPublishing(false)
         if (res.ok && res.data) {
@@ -334,7 +380,10 @@ export function ComposeScreen({
                         // gives the text the space that REMAINS, keeping the
                         // previews visible. lb-phone only — Quasar keeps
                         // `min-h-full` exactly as before.
-                        lbPhone ? 'flex-1' : 'min-h-full',
+                        // 30/09 : sur Quasar (qs-smartphone), `min-h-full` ecrasait la
+                        // carte d'Ippoke en une bande de quelques pixels. Des qu'il y a
+                        // une piece jointe, le texte ne prend que sa hauteur, partout.
+                        images.length > 0 || hostingImage || video ? 'shrink-0' : lbPhone ? 'flex-1' : 'min-h-full',
                     )}
                 >
                     {/* Colour layer: it reproduces the text identically and puts
@@ -427,8 +476,37 @@ export function ComposeScreen({
                 </div>
 
                 {}
-                {images.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto px-4 pb-2 topv-noscrollbar">
+                {/* 30/09 (« un vrai apercu de post ») : UNE image s'affiche
+                    en grand, comme dans le fil ; deux ou plus, en vignettes. */}
+                {images.length + (hostingImage ? 1 : 0) === 1 && (
+                    <div className="shrink-0 px-4 pb-2">
+                        <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900">
+                            {hostingImage ? (
+                                <div className="flex aspect-[4/5] w-full items-center justify-center">
+                                    <Spinner className="h-6 w-6" />
+                                </div>
+                            ) : (
+                                <>
+                                    <img src={images[0]} alt="" className="aspect-[4/5] w-full object-cover" draggable={false} />
+                                    <button
+                                        type="button"
+                                        onClick={() => setImages([])}
+                                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white shadow"
+                                    >
+                                        <CloseIcon className="h-3.5 w-3.5" />
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {images.length + (hostingImage ? 1 : 0) > 1 && (
+                    <div className="flex shrink-0 gap-2 overflow-x-auto px-4 pb-2 topv-noscrollbar">
+                        {hostingImage && (
+                            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900">
+                                <Spinner className="h-5 w-5" />
+                            </div>
+                        )}
                         {images.map((url) => (
                             <div key={url} className="relative shrink-0">
                                 <img
@@ -447,6 +525,9 @@ export function ComposeScreen({
                             </div>
                         ))}
                     </div>
+                )}
+                {imageFailed && !hostingImage && (
+                    <div className="shrink-0 px-4 pb-2 text-[12px] text-red-500">{t('compose.imageFailed')}</div>
                 )}
 
                 {/* The chosen video. It takes over the post on its own. */}

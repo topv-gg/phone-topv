@@ -65,6 +65,7 @@
   "compose.gallery": "Galerij",
   "compose.gif": "GIF",
   "compose.placeholder": "Wat gebeurt er in de stad?",
+  "compose.imageFailed": "De afbeelding kon niet worden toegevoegd. Je tekst staat er nog.",
   "compose.publish": "Plaatsen",
   "compose.published": "Je bericht staat online",
   "compose.publishing": "Plaatsen…",

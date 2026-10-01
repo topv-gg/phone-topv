@@ -98,6 +98,10 @@ end
 local DEFAULT_TIMEOUT_MS = 20000
 local POLL_TIMEOUT_MS    = (Config.Poll and Config.Poll.timeoutMs or 25000) + 15000
 
+local function trace(fmt, ...)
+    if Config.Debug then print(('[phone-topv] ' .. fmt):format(...)) end
+end
+
 RegisterNUICallback('topv:api', function(data, cb)
     local action  = data and data.action
     local payload = data and data.payload
@@ -118,8 +122,10 @@ RegisterNUICallback('topv:api', function(data, cb)
         finish({ ok = false, error = 'timeout' })
     end)
 
+    if action == 'post.create' then trace('post.create asked (images=%s)', tostring(type(payload) == 'table' and type(payload.imageUrls) == 'table' and #payload.imageUrls or 0)) end
     CreateThread(function()
         local result = lib.callback.await('phone-topv:api', false, action, payload)
+        if action == 'post.create' then trace('post.create answered ok=%s status=%s error=%s', tostring(type(result) == 'table' and result.ok), tostring(type(result) == 'table' and result.status), tostring(type(result) == 'table' and result.error)) end
         finish(type(result) == 'table' and result or { ok = false, error = 'no_response' })
     end)
 end)
@@ -196,6 +202,83 @@ end)
 -- the server uploads it (the server holds the key, the NUI does not) and
 -- returns the URL, which then travels in the message like any ordinary
 -- attachment.
+-- ── Opening the app on a screen, for another resource (IppoGo...) ──
+-- TriggerEvent('topv:open', { screen = 'secure' })   -- linking this phone (QR)
+-- TriggerEvent('topv:open', { screen = 'compose', text = '...', source = 'ippogo', image = 'data:image/jpeg;base64,...' })
+--     a post started; `source` = the app it comes from, which TopV Social knows
+--     (the card joined to the post: its icon and where to get it, kept by TopV);
+--     `image` (1.3.7) = a picture the app made (Ippoke's card of the moment),
+--     joined to the post like a photo the player took: they see it, can remove
+--     it, and publish themselves.
+-- A client event only: it opens a screen, nothing more. The player still
+-- publishes, or links, by themselves, with their own device token.
+local pendingIntent = nil
+
+AddEventHandler('topv:open', function(intent)
+    if type(intent) ~= 'table' then return end
+    trace('topv:open screen=%s text=%s image=%s', tostring(intent.screen), tostring(intent.text and #intent.text), tostring(type(intent.image) == 'string' and #intent.image or nil))
+    local screen = intent.screen
+    if screen ~= 'secure' and screen ~= 'compose' and screen ~= 'home' then return end
+    pendingIntent = {
+        screen = screen,
+        text = type(intent.text) == 'string' and intent.text:sub(1, 500) or nil,
+        -- A short name only: never an address (TopV Social decides what it shows).
+        source = type(intent.source) == 'string' and intent.source:match('^[a-z0-9_-]+$')
+            and #intent.source <= 32 and intent.source or nil,
+        -- A picture only (JPEG, PNG or WebP data URI), bounded: never an address.
+        -- The server checks it again before hosting it (phone-topv:uploadImage).
+        image = screen == 'compose' and type(intent.image) == 'string' and #intent.image <= 3 * 1024 * 1024
+            and (intent.image:sub(1, 23) == 'data:image/jpeg;base64,'
+                or intent.image:sub(1, 22) == 'data:image/png;base64,'
+                or intent.image:sub(1, 23) == 'data:image/webp;base64,')
+            and intent.image or nil,
+    }
+    if GetResourceState('lb-phone') == 'started' then
+        CreateThread(function()
+            -- Not downloaded from the App Store yet: lb-phone would refuse to open it
+            -- ("App is not installed") and nothing would happen. It is put on the
+            -- phone first: already there, lb-phone leaves it where it is.
+            pcall(function() exports['lb-phone']:SetAppInstalled(Config.App.id, true) end)
+            pcall(function() exports['lb-phone']:ToggleOpen(true) end)
+            Wait(150)
+            pcall(function()
+                exports['lb-phone']:OpenApp(Config.App.id)
+                -- The interface may be open already: it is told to look now.
+                exports['lb-phone']:SendCustomAppMessage(Config.App.id, { type = 'topv:intent' })
+            end)
+        end)
+    end
+    -- Other phones: the intent waits for the next time the app opens.
+end)
+
+-- The interface asks, when it opens or is told to: where to go, once.
+RegisterNUICallback('topv:intent', function(_, cb)
+    local intent = pendingIntent
+    pendingIntent = nil
+    if intent then trace('topv:intent read by the interface: screen=%s image=%s', tostring(intent.screen), tostring(intent.image ~= nil)) end
+    cb({ intent = intent })
+end)
+
+-- Hosting the PICTURE an app joined to a post (topv:open `image`, 1.3.7): the
+-- server uploads it with its key, the interface gets its address back and adds
+-- it to the post like a photo from the gallery.
+RegisterNUICallback('topv:uploadImage', function(data, cb)
+    local image = type(data) == 'table' and data.image or nil
+    if type(image) ~= 'string' or image:sub(1, 11) ~= 'data:image/' then
+        cb({ ok = false, error = 'bad_image' })
+        return
+    end
+    local finished = false
+    local function finish(r) if not finished then finished = true; cb(r) end end
+    SetTimeout(30000, function() finish({ ok = false, error = 'timeout' }) end)
+    trace('topv:uploadImage asked (%d bytes)', #image)
+    CreateThread(function()
+        local result = lib.callback.await('phone-topv:uploadImage', false, image)
+        trace('topv:uploadImage answered ok=%s error=%s', tostring(type(result) == 'table' and result.ok), tostring(type(result) == 'table' and result.error))
+        finish(type(result) == 'table' and result or { ok = false, error = 'no_response' })
+    end)
+end)
+
 RegisterNUICallback('topv:uploadVoice', function(data, cb)
     local audio = type(data) == 'table' and data.audio or nil
     if type(audio) ~= 'string' or audio:sub(1, 11) ~= 'data:audio/' then

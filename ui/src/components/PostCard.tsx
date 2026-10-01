@@ -14,6 +14,7 @@ import { ImageGrid, YouTubeEmbed } from './ImageGrid'
 import { PostVideo } from './PostVideo'
 import { ReactionBar } from './ReactionBar'
 import { RichText } from './RichText'
+import { AppSourceCard, appSourceOf, viaAppSource } from './AppSourceCard'
 
 export function PostCard({
     post,
@@ -172,6 +173,9 @@ export function PostCard({
                                 </span>
                                 <span className="text-[12px] text-zinc-400 dark:text-zinc-500">
                                     {timeAgo(post.createdAt)}
+                                    {appSourceOf(post.sourceApp) && (
+                                        <span className="text-[#FF3C00]"> · {viaAppSource(appSourceOf(post.sourceApp)!)}</span>
+                                    )}
                                 </span>
                             </div>
                             {/* The LOCATION no longer shows here — only on the
@@ -244,6 +248,8 @@ export function PostCard({
                             />
                         </div>
                     )}
+
+                    {appSourceOf(post.sourceApp) && <AppSourceCard app={appSourceOf(post.sourceApp)!} />}
 
                     {Array.isArray(post.imageUrls) && post.imageUrls.length > 0 && (
                         <ImageGrid urls={post.imageUrls} sepia={deceased} />

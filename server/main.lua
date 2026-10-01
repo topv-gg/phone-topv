@@ -515,9 +515,9 @@ local function topvUploadDataUri(discordId, dataUri, cb)
         -- it renders in an audio player instead of being mistaken for a video.
         body.audio = dataUri
     else
-        body.image = dataUri; body.file = dataUri; body.dataUri = dataUri
-        body.dataUrl = dataUri; body.imageDataUri = dataUri; body.base64 = dataUri
-        body.data = dataUri
+        -- `image` is the only field /api/ingame/upload reads. The picture used to
+        -- travel seven times in the same request under other names.
+        body.image = dataUri
     end
     if SERVER_SLUG ~= '' then body.serverSlug = SERVER_SLUG end
 
@@ -704,6 +704,13 @@ local function startSession(src)
             lastStartError[src] = nil
             Player(src).state:set('topvCharacterId', data.characterId, true)
             Player(src).state:set('topvUsername', data.profileUsername, false)
+            -- What the player did with their TopV account (topv.gg 2026-09-25):
+            -- 'none' (created from Discord, never signed in), 'account' (signed
+            -- in), 'secured' (this phone linked to it). For the other resources.
+            if data.accountStatus then
+                sessions[src].accountStatus = data.accountStatus
+                Player(src).state:set('topvAccount', data.accountStatus, false)
+            end
             TriggerEvent('topv:sessionStarted', src, sessions[src])
             if data.createdCharacter and Config.Mugshot and Config.Mugshot.enabled
                 and Config.Mugshot.autoSetOnFirstSession then
@@ -793,6 +800,7 @@ AddEventHandler('topv:characterSwitched', function(src)
     if Player(src) then
         Player(src).state:set('topvCharacterId', nil, true)
         Player(src).state:set('topvUsername', nil, false)
+        Player(src).state:set('topvAccount', nil, false)
     end
     scheduleSessionStart(src, 1000)
 end)
@@ -1080,6 +1088,21 @@ CreateThread(function()
                         -- which is why the directives travel on it.
                         -- consignes redescendent.
                         if status == 200 and data then applyDirectives(data.directives) end
+                        -- The kind of account of each player: they may have signed
+                        -- in on TopV or linked their phone meanwhile.
+                        if status == 200 and data and type(data.accounts) == 'table' then
+                            for src, sess in pairs(sessions) do
+                                local kind = data.accounts[sess.discordId]
+                                if kind and GetPlayerName(src) then
+                                    local changed = sess.accountStatus ~= kind
+                                    sess.accountStatus = kind
+                                    Player(src).state:set('topvAccount', kind, false)
+                                    -- For the other resources (IppoGo gives its reward
+                                    -- for linking): only when it changed.
+                                    if changed then TriggerEvent('topv:accountStatus', src, kind) end
+                                end
+                            end
+                        end
                         if status == 404 and batchSupported.heartbeat then
                             batchSupported.heartbeat = false
                             warn('backend without /session/heartbeat-batch — falling back to per-player heartbeat')
@@ -1095,6 +1118,41 @@ CreateThread(function()
             end
         end
     end
+end)
+
+-- Another resource of this server (IppoGo's Account screen) asks for a player's
+-- kind of account now, instead of waiting for the next heartbeat: they may just
+-- have signed in on TopV, or linked their phone. A server event only (not a
+-- network one): no player can trigger it. At most once every 15 s per player.
+local accountAskedAt = {}
+AddEventHandler('topv:refreshAccount', function(src)
+    src = tonumber(src)
+    local sess = src and sessions[src]
+    if not sess then return end
+    local now = GetGameTimer()
+    if accountAskedAt[src] and now - accountAskedAt[src] < 15000 then return end
+    accountAskedAt[src] = now
+    topvPost('/api/v1/ingame/session/heartbeat', { playerDiscordId = sess.discordId }, function(status, data)
+        if status == 200 and data and data.accountStatus and sessions[src] == sess then
+            sess.accountStatus = data.accountStatus
+            Player(src).state:set('topvAccount', data.accountStatus, false)
+            TriggerEvent('topv:accountStatus', src, data.accountStatus)
+        end
+    end)
+end)
+
+AddEventHandler('playerDropped', function()
+    accountAskedAt[source] = nil
+end)
+
+-- For the other resources of this server: the player's TopV username and kind
+-- of account, from the server's own session table. ⚠️ Never the state bag for
+-- anything that gives something: a player can write their own state bag.
+--   exports['phone-topv']:GetAccount(src) -> { username, account } | nil
+exports('GetAccount', function(src)
+    local sess = sessions[tonumber(src) or -1]
+    if not sess then return nil end
+    return { username = sess.profileUsername, account = sess.accountStatus or 'none' }
 end)
 
 AddEventHandler('phone:opened', function(playerSource)
@@ -1420,6 +1478,11 @@ actions['post.create'] = function(_, sess, p)
         -- and to render mentions as character cards (not roliste handles).
         characterMentions = cleanStringArray(p.characterMentions, 10, cleanId),
         characterId       = sess.characterId,
+        -- The app of the game the post was started from (IppoGo's « Share on
+        -- TopV Social »): a short name only, TopV decides what it shows (its
+        -- own card, never an address sent from here).
+        sourceApp         = type(p.sourceApp) == 'string' and #p.sourceApp <= 32
+            and p.sourceApp:match('^[a-z0-9_-]+$') or nil,
     }
 end
 
@@ -2293,6 +2356,10 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
                 lastStartError[src] = nil
                 Player(src).state:set('topvCharacterId', data.characterId, true)
                 Player(src).state:set('topvUsername', data.profileUsername, false)
+                if data.accountStatus then
+                    sessions[src].accountStatus = data.accountStatus
+                    Player(src).state:set('topvAccount', data.accountStatus, false)
+                end
                 TriggerEvent('topv:sessionStarted', src, sessions[src])
                 if data.createdCharacter and Config.Mugshot and Config.Mugshot.enabled
                     and Config.Mugshot.autoSetOnFirstSession then
@@ -2368,23 +2435,30 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
         return result
     end
 
+    local function traced(result)
+        if action == 'post.create' then
+            dbg('post.create for player %s -> ok=%s status=%s error=%s', tostring(src), tostring(result.ok), tostring(result.status), tostring(result.error))
+        end
+        return result
+    end
+
     local handler = actions[action]
     if not handler then
-        return { ok = false, error = 'unknown_action' }
+        return traced({ ok = false, error = 'unknown_action' })
     end
 
     local sess = sessions[src]
     if not sess then
-        return { ok = false, error = 'no_session' }
+        return traced({ ok = false, error = 'no_session' })
     end
 
     if not rateCheck(src, action) then
-        return { ok = false, error = 'rate_limited_local' }
+        return traced({ ok = false, error = 'rate_limited_local' })
     end
 
     local path, body = handler(src, sess, payload)
     if not path then
-        return { ok = false, error = body }
+        return traced({ ok = false, error = body })
     end
 
     body.playerDiscordId = sess.discordId
@@ -2405,7 +2479,7 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
 
     local status, data = topvAwait(path, body)
     if not ok200(status) then
-        return { ok = false, status = status, error = buildError(status, data), session = sessionSnapshot(src) }
+        return traced({ ok = false, status = status, error = buildError(status, data), session = sessionSnapshot(src) })
     end
 
     rateStamp(src, action)
@@ -2439,7 +2513,7 @@ lib.callback.register('phone-topv:api', function(source, action, payload)
         liveAuthorized[src] = nil
     end
 
-    return { ok = true, status = status, data = data, session = sessionSnapshot(src) }
+    return traced({ ok = true, status = status, data = data, session = sessionSnapshot(src) })
 end)
 
 -- Push a single Quasar phone notification (banner + tray entry).
@@ -2648,6 +2722,38 @@ lib.callback.register('phone-topv:uploadVoice', function(source, dataUri)
     end
     local p = promise.new()
     topvUploadDataUri(sess.discordId, dataUri, function(ok, urlOrErr)
+        p:resolve(ok and { ok = true, url = urlOrErr } or { ok = false, error = urlOrErr })
+    end)
+    return Citizen.Await(p)
+end)
+
+-- Hosts the PICTURE another app joined to a post (topv:open `image`, 1.3.7:
+-- Ippoke's card of the moment) and returns its URL; the player then publishes
+-- it like any photo. A picture only (JPEG, PNG, WebP), 3 MB at most, one every
+-- 5 s per player: a modified client cannot turn it into a free image host.
+lib.callback.register('phone-topv:uploadImage', function(source, dataUri)
+    local function refused(reason)
+        warn('shared picture from another app refused for player %s: %s', tostring(source), tostring(reason))
+        return { ok = false, error = reason }
+    end
+    local sess = sessions[source]
+    if not sess then return refused('no_session') end
+    if type(dataUri) ~= 'string' or #dataUri < 100 or #dataUri > 3 * 1024 * 1024
+        or not (dataUri:sub(1, 23) == 'data:image/jpeg;base64,'
+            or dataUri:sub(1, 22) == 'data:image/png;base64,'
+            or dataUri:sub(1, 23) == 'data:image/webp;base64,') then
+        return refused('bad_image (' .. tostring(type(dataUri) == 'string' and #dataUri or 'none') .. ' bytes)')
+    end
+    local now = GetGameTimer()
+    if sess.lastImageAt and (now - sess.lastImageAt) < 5000 then
+        return refused('cooldown')
+    end
+    sess.lastImageAt = now
+    dbg('shared picture from another app received for player %s (%d bytes)', tostring(source), #dataUri)
+    local p = promise.new()
+    topvUploadDataUri(sess.discordId, dataUri, function(ok, urlOrErr)
+        if not ok then warn('shared picture from another app: upload failed for player %s: %s', tostring(source), tostring(urlOrErr)) end
+        if ok then dbg('shared picture from another app hosted for player %s: %s', tostring(source), tostring(urlOrErr)) end
         p:resolve(ok and { ok = true, url = urlOrErr } or { ok = false, error = urlOrErr })
     end)
     return Citizen.Await(p)

@@ -1,4 +1,5 @@
-import { useEffect, type ComponentType } from 'react'
+import { useEffect, useRef, type ComponentType } from 'react'
+import { fetchNui } from '@/utils/fetchNui'
 import classNames from 'classnames'
 import { isEnvBrowser } from '@/utils/misc'
 import { useIsLbPhone } from '@/utils/useIsLbPhone'
@@ -7,6 +8,7 @@ import { NavProvider, useNav, type Route, type TabName } from '@/topv/nav'
 import { installTypingGuard } from '@/topv/typingGuard'
 import { RealtimeProvider, useRealtime } from '@/topv/realtime'
 import { SessionProvider, useSession } from '@/topv/session'
+import { settleFirstGameRequest } from '@/topv/intents'
 import { emitAppEvent } from '@/topv/events'
 import {
     AlertIcon,
@@ -117,6 +119,9 @@ function StackScreen({ route }: { route: Route }) {
                 <ComposeScreen
                     onPublished={(post) => emitAppEvent('post:published', post)}
                     prefillMention={route.prefillMention}
+                    prefillText={route.prefillText}
+                    prefillImage={route.prefillImage}
+                    sourceApp={route.source}
                 />
             )
         case 'post':
@@ -245,8 +250,69 @@ const FULLSCREEN_ROUTES: ReadonlySet<Route['name']> = new Set([
     'liveBroadcast',
 ])
 
+// ⭐ ANOTHER RESOURCE OF THE GAME CAN OPEN A SCREEN (phone-topv 1.3.6, event
+// `topv:open`): linking this phone (IppoGo's Account screen), or a post it
+// started (a rare catch...). Nothing is ever published for the player: the post
+// waits in the composer, they add a photo or a Medal clip and publish it
+// themselves, with their own device token. The game keeps the intent; it is
+// taken when this screen appears, and when lb-phone says to look now
+// (SendCustomAppMessage), or when the app comes back into view.
+function useGameIntents(nav: ReturnType<typeof useNav>, me: string | null) {
+    // Read through a ref: the effect is set up once, `me` may change after.
+    const meRef = useRef(me)
+    meRef.current = me
+    useEffect(() => {
+        let alive = true
+        const take = async () => {
+            const res = await fetchNui<{ intent?: { screen?: string; text?: string; source?: string; image?: string } | null }>('topv:intent', {}).catch(() => null)
+            const intent = res && res.intent
+            // The opening tutorial waits for this answer (topv/intents.ts).
+            settleFirstGameRequest(intent && typeof intent.screen === 'string' ? intent.screen : null)
+            if (!alive || !intent) return
+            if (intent.screen === 'secure') {
+                // 27/09: THE PROFILE FIRST, the securing screen on top
+                // of it — « Back » then lands on the player's profile, never on
+                // the feed. The tab switch empties the stack on purpose: the game
+                // asked for this, whatever was open before.
+                nav.setTab('feed')
+                if (meRef.current) nav.push({ name: 'profile', username: meRef.current })
+                nav.push({ name: 'secureAccount' })
+            }
+            else if (intent.screen === 'compose')
+                nav.push({
+                    name: 'compose',
+                    prefillText: typeof intent.text === 'string' ? intent.text.slice(0, 500) : undefined,
+                    source: typeof intent.source === 'string' ? intent.source : undefined,
+                    // 1.3.7: a picture the app made (Ippoke's card of the moment),
+                    // joined to the post like a photo. A picture only, never an address.
+                    prefillImage: typeof intent.image === 'string' && /^data:image\/(jpeg|png|webp);base64,/.test(intent.image)
+                        ? intent.image : undefined,
+                })
+            else if (intent.screen === 'home') nav.popAll()
+        }
+        void take()
+        const onMessage = (e: MessageEvent) => {
+            const d = e.data as { type?: string; data?: { type?: string } } | null
+            if (d && typeof d === 'object' && (d.type === 'topv:intent' || d.data?.type === 'topv:intent')) void take()
+        }
+        const onVisible = () => {
+            if (!document.hidden) void take()
+        }
+        window.addEventListener('message', onMessage)
+        document.addEventListener('visibilitychange', onVisible)
+        return () => {
+            alive = false
+            window.removeEventListener('message', onMessage)
+            document.removeEventListener('visibilitychange', onVisible)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+}
+
 function MainLayout() {
     const nav = useNav()
+    const { me } = useSession()
+    useGameIntents(nav, me)
 
     const tabs: { name: TabName; node: React.ReactNode }[] = [
         { name: 'feed', node: <FeedScreen /> },

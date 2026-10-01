@@ -65,6 +65,7 @@
   "compose.gallery": "Galería",
   "compose.gif": "GIF",
   "compose.placeholder": "¿Qué está pasando en la ciudad?",
+  "compose.imageFailed": "No se pudo añadir la imagen. Tu texto sigue aquí.",
   "compose.publish": "Publicar",
   "compose.published": "Tu post ya está publicado",
   "compose.publishing": "Publicando…",

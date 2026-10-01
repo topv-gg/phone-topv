@@ -90,7 +90,7 @@ resource name was written by hand in one place. It is read from the game now, so
 >   copy only exists from the first start on 1.3.5;
 > - **keep the same folder name (`phone-topv`), in the same place.** The copy is stored under that
 >   name, and it is only trusted by a resource sitting where it was saved. GitHub's "Source code"
->   archive unpacks as `phone-topv-1.3.5`, so rename it, or use `phone-topv.zip`.
+>   archive unpacks as `phone-topv-1.3.7`, so rename it, or use `phone-topv.zip`.
 >
 > **So deleting the file no longer resets anything.** To start over under a new identity, for
 > example on a server you copied from another one, type this in the server console:

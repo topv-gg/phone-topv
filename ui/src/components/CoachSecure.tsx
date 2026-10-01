@@ -3,6 +3,7 @@ import { useNav } from '@/topv/nav'
 import { useSession } from '@/topv/session'
 import { getLocale } from '@/topv/i18n'
 import { getDeviceToken } from '@/topv/link'
+import { firstGameRequest } from '@/topv/intents'
 
 /**
  * THE OPENING TUTORIAL — “for full immersion, secure your account”.
@@ -30,11 +31,24 @@ export function CoachSecure() {
     let seen = false
     try { seen = !!localStorage.getItem(SEEN_KEY) } catch { /* private mode */ }
     if (seen) return
-    // We take the player to their profile, then show the veil.
-    nav.setTab('feed')
-    nav.push({ name: 'profile', username: me })
-    const t = setTimeout(() => setShow(true), 650)
-    return () => clearTimeout(t)
+    // ⚠️ 27/09: WAIT FOR THE GAME'S REQUEST. On a first opening triggered by
+    // another resource (Ippoke's « Link », a post started), the game's screen
+    // comes first and the tutorial stays silent this time: the player is
+    // already being guided. It used to switch tab (which empties the stack),
+    // closing the screen the game had just opened.
+    let cancelled = false
+    let t: ReturnType<typeof setTimeout> | undefined
+    void firstGameRequest.then((screen) => {
+        if (cancelled || screen) return
+        // We take the player to their profile, then show the veil.
+        nav.setTab('feed')
+        nav.push({ name: 'profile', username: me })
+        t = setTimeout(() => setShow(true), 650)
+    })
+    return () => {
+        cancelled = true
+        if (t) clearTimeout(t)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, me])
 
